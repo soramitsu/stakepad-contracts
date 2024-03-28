@@ -1,6 +1,6 @@
 /*SPDX-License-Identifier: MIT
 */
-import "./PoolContract.sol";
+import "./erc20staking.sol";
 
 contract StakingPoolFactory{
     address[] stakingPools;
