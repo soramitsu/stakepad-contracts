@@ -23,8 +23,7 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable (msg.sender){
     uint256 lockupPeriod;
     bool isActive;
     mapping (address => User) userInfo;
-    address developerAddress;
-    address public feeDestination;
+    address public adminAddress;
 
     struct User{
         uint256 amount;
@@ -42,20 +41,20 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable (msg.sender){
     event UpdatePool(uint256 totalStaked, uint256 accumulatedRewardTokenPerShare, uint256 lastBlockNumber);
     
 
-    constructor(address _sToken, address _rToken,
-        address _feeDestination, uint256 rPerBlck, uint256 _lockUpPeriod){
+    constructor(address _sToken, address _rToken, uint256 rPerBlck, uint256 _lockUpPeriod){
         stakeToken = IERC20(_sToken);
         rewardToken = IERC20(_rToken);
         rewardTokenPerBlock = rPerBlck;
         lastAccessedBlock = block.timestamp;
-        feeDestination = _feeDestination;
+        adminAddress = msg.sender;
         isActive = false;
         lockupPeriod = _lockUpPeriod;
     }
 
     function collectCreationFee (uint256 amount) internal {
         uint256 percent = (amount * 3) / 100;
-        stakeToken.transferFrom(msg.sender, developerAddress, percent);
+        stakeToken.transferFrom(msg.sender, adminAddress, percent);
+        amount = amount - percent;
     }
 
     function setUserPendingRewards() internal returns (uint256){
@@ -94,6 +93,7 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable (msg.sender){
         setUserPendingRewards();
         userInfo[msg.sender].amount += amount;
         totalStaked += amount;
+        collectCreationFee(amount);
         stakeToken.safeTransferFrom(msg.sender, address(this) , amount);
 
         emit Stake(msg.sender, amount);
