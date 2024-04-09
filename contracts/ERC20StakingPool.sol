@@ -2,7 +2,7 @@
 SPDX-License-Identifier: MIT
 */
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,18 +12,9 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable (msg.sender){
 
     using SafeERC20 for IERC20;
     error InsufficientAmount(uint256 amount);
+    error TokensInLockup(uint256 currentTime, uint256 unlockTime);
 
-    IERC20 stakeToken;
-    IERC20 rewardToken;
-    uint256 rewardTokenPerBlock;
-    uint256 totalStaked;
-    uint256 totalClaimed;
-    uint256 lastAccessedBlock;
-    uint256 accumulatedRewardTokenPerShare;
-    uint256 lockupPeriod;
-    bool isActive;
-    mapping (address => User) userInfo;
-    address public adminAddress;
+  
 
     struct User{
         uint256 amount;
@@ -33,6 +24,22 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable (msg.sender){
         uint256 stakeTimestamp;
     }
 
+    struct Pool{
+          IERC20 stakeToken;
+    IERC20 rewardToken;
+    uint256 rewardTokenPerBlock;
+    uint256 totalStaked;
+    uint256 totalClaimed;
+    uint256 lastAccessedBlock;
+    uint256 accumulatedRewardTokenPerShare;
+    uint256 lockupPeriod;
+    uint256 poolStartTime;
+    uint256 poolEndTime;
+    bool isActive;
+    mapping (address => User) userInfo;
+    address adminAddress;
+    }
+    Pool public pool;
     //Events
     event Stake(address user, uint256 amount);
     event Unstake(address user, uint256 amount);
@@ -41,98 +48,107 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable (msg.sender){
     event UpdatePool(uint256 totalStaked, uint256 accumulatedRewardTokenPerShare, uint256 lastBlockNumber);
     
 
-    constructor(address _sToken, address _rToken, uint256 rPerBlck, uint256 _lockUpPeriod){
-        stakeToken = IERC20(_sToken);
-        rewardToken = IERC20(_rToken);
-        rewardTokenPerBlock = rPerBlck;
-        lastAccessedBlock = block.timestamp;
-        adminAddress = msg.sender;
-        isActive = false;
-        lockupPeriod = _lockUpPeriod;
+    constructor(address _stakeToken, address _rewardToken, uint256 _rewardTokenPerBlock, uint256 _poolStartTime, uint256 _poolEndTime, address _adminAddress){
+        pool.stakeToken = IERC20(_stakeToken);
+        pool.rewardToken = IERC20(_rewardToken);
+        pool.rewardTokenPerBlock = _rewardTokenPerBlock;
+        pool.lastAccessedBlock = block.timestamp;
+        pool.poolStartTime = _poolStartTime;
+        pool.poolEndTime = _poolEndTime;
+        pool.adminAddress = _adminAddress;
+       pool.isActive = false;
+        //pool.lockupPeriod = pool._lockUpPeriod;
     }
 
     function collectCreationFee (uint256 amount) internal {
         uint256 percent = (amount * 3) / 100;
-        stakeToken.transferFrom(msg.sender, adminAddress, percent);
+        pool.stakeToken.transferFrom(msg.sender, pool.adminAddress, percent);
         amount = amount - percent;
     }
 
-    function setUserPendingRewards() internal returns (uint256){
-        User storage user = userInfo[msg.sender];
-        uint256 pendingReward = (user.amount * accumulatedRewardTokenPerShare) - user.rewardDebt ;
-        user.unclaimed += pendingReward;
-        user.rewardDebt = user.amount * accumulatedRewardTokenPerShare;
-        return pendingReward;
-    }
+  
 
     function updatePool() internal {
-        if(block.timestamp > lastAccessedBlock){
-            if(totalStaked > 0 ){
-                uint256 blockDifference = block.timestamp - lastAccessedBlock;
-                uint256 totalNewReward = rewardTokenPerBlock * blockDifference;
-                accumulatedRewardTokenPerShare += totalNewReward/totalStaked;
+        if(block.timestamp > pool.lastAccessedBlock){
+            if(pool.totalStaked > 0 ){
+                uint256 blockDifference = block.timestamp - pool.lastAccessedBlock;
+                uint256 totalNewReward = pool.rewardTokenPerBlock * blockDifference;
+                pool.accumulatedRewardTokenPerShare += totalNewReward/pool.totalStaked;
             }
-            lastAccessedBlock = block.timestamp;
-            emit UpdatePool(totalStaked, accumulatedRewardTokenPerShare, block.timestamp);
+            pool.lastAccessedBlock = block.timestamp;
+            emit UpdatePool(pool.totalStaked, pool.accumulatedRewardTokenPerShare, block.timestamp);
         }
     }
 
     function viewTokens(address user_address) public view returns(uint256 pendingReward)  { 
-        if(block.timestamp > lastAccessedBlock && totalStaked > 0){
-            uint256 blockDifference = block.timestamp - lastAccessedBlock;
-            uint256 totalNewReward = rewardTokenPerBlock * blockDifference;
-            uint256 accummulateRewardTokenPerShare = totalNewReward/totalStaked;
-            User storage user = userInfo[user_address];
+        if(block.timestamp > pool.lastAccessedBlock && pool.totalStaked > 0){
+            uint256 blockDifference = block.timestamp - pool.lastAccessedBlock;
+            uint256 totalNewReward = pool.rewardTokenPerBlock * blockDifference;
+            uint256 accummulateRewardTokenPerShare = totalNewReward/pool.totalStaked;
+            User storage user = pool.userInfo[user_address];
             pendingReward = (user.amount * accummulateRewardTokenPerShare) - user.rewardDebt ;          
         } 
         return pendingReward;
     }
 
-
+  function setUserPendingRewards() internal returns (uint256){
+        User storage user = pool.userInfo[msg.sender];
+        uint256 pendingReward = (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
+        user.unclaimed += pendingReward;
+        user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
+        return pendingReward;
+    }
     function stake(uint256 amount) external {
-        setUserPendingRewards();
-        userInfo[msg.sender].amount += amount;
-        totalStaked += amount;
-        collectCreationFee(amount);
-        stakeToken.safeTransferFrom(msg.sender, address(this) , amount);
-
+        User storage user = pool.userInfo[msg.sender];
+        user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
+        user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
+        pool.userInfo[msg.sender].amount += amount;
+        pool.totalStaked += amount;
+        pool.stakeToken.safeTransferFrom(msg.sender, address(this) , amount);
+        user.stakeTimestamp = block.timestamp;
         emit Stake(msg.sender, amount);
 
         updatePool();
     }
 
     function unstake(uint256 amount) external nonReentrant{
-        setUserPendingRewards();
-        User storage user = userInfo[msg.sender];
-        if (user.amount < amount)
-            revert InsufficientAmount(user.amount);
-        require(block.timestamp >= user.stakeTimestamp + lockupPeriod, "tokens are in lock-up");
-        user.amount -= amount;
-        totalStaked -= amount;
-        stakeToken.safeTransfer(msg.sender, amount);
+        
+        User storage user = pool.userInfo[msg.sender];
+        if(block.timestamp >= user.stakeTimestamp + pool.lockupPeriod)
+            revert TokensInLockup(block.timestamp, user.stakeTimestamp + pool.lockupPeriod);
+        if (user.amount > amount){
+            user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
+            user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
+            pool.userInfo[msg.sender].amount -= amount;
+            pool.totalStaked -= amount;
+            pool.stakeToken.safeTransfer(msg.sender, amount);
 
-        emit Unstake(msg.sender,  amount);
+            emit Unstake(msg.sender,  amount);
 
-        updatePool();
+            updatePool();
+        }
+        else{revert InsufficientAmount(user.amount);}
+        
     }
 
     function claim() external nonReentrant{
-        User storage user = userInfo[msg.sender];
+        User storage user = pool.userInfo[msg.sender];
 
         if (user.amount < 100)
             revert InsufficientAmount(user.amount);
 
-        uint256 pendingRewards = setUserPendingRewards();
-        user.claimed += pendingRewards;
-        totalClaimed += pendingRewards;
-        rewardToken.safeTransfer(msg.sender, pendingRewards);
-        emit Claim(msg.sender, pendingRewards);
-
+        user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
+        user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
+        user.claimed += user.unclaimed;
+        pool.totalClaimed += user.unclaimed;
+        pool.rewardToken.safeTransfer(msg.sender, user.unclaimed);
+        emit Claim(msg.sender, user.unclaimed);
+        user.unclaimed = 0;
         updatePool();
     }
 
     function activate() public  {
-        isActive = true;
+        pool.isActive = true;
         emit ActivatePool();
     }
 }
