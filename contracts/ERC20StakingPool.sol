@@ -125,18 +125,14 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable{
         User storage user = pool.userInfo[msg.sender];
         if(block.timestamp < pool.lockupPeriod)
             revert TokensInLockup(block.timestamp, pool.lockupPeriod);
-        if (user.amount > amount){
-            user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
-            user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
-            pool.userInfo[msg.sender].amount -= amount;
-            pool.totalStaked -= amount;
-            pool.stakeToken.safeTransfer(msg.sender, amount);
-
-            emit Unstake(msg.sender,  amount);
-
-            
-        }
-        else{revert InsufficientAmount(user.amount);}
+        if (user.amount < amount)
+         revert InsufficientAmount(user.amount);
+        user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
+        user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
+        pool.userInfo[msg.sender].amount -= amount;
+        pool.totalStaked -= amount;
+        pool.stakeToken.safeTransfer(msg.sender, amount);
+        emit Unstake(msg.sender,  amount);
         
     }
 
