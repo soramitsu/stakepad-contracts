@@ -8,21 +8,36 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract  ERC20StakingPool is ReentrancyGuard, Ownable(msg.sender){
+contract  ERC20StakingPool is ReentrancyGuard, Ownable{
 
     using SafeERC20 for IERC20;
     error InsufficientAmount(uint256 amount);
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
+    error PoolNotStarted();
+    error PoolEnded();
+    error StartTimeOrLockUpTimeAfterEndTime();
+    error PoolNotActive();
+    error PoolLockUpPeriod();
+    error NotAdmin();
+
+
     modifier onlyAdmin() {
-        require(msg.sender == pool.adminAddress, "Not admin");
+        if(msg.sender == pool.adminAddress) revert NotAdmin();
         _;
     }
     modifier validPoolPeriod() {
-    require(block.timestamp > pool.poolStartTime, "Pool has not started");
-    require(block.timestamp < pool.poolEndTime, "Pool has ended");
+        if(block.timestamp > pool.poolStartTime) revert PoolNotStarted();
+        if(block.timestamp < pool.poolEndTime) revert PoolEnded();
     _;
     }
-
+    modifier poolIsActive() {
+        if (!pool.isActive) revert PoolNotActive();
+        _;
+    }
+    modifier lockUpPeriod() {
+        if (block.timestamp < pool.lockupPeriod) revert PoolLockUpPeriod();
+        _;
+    }
 
   
     struct User{
@@ -58,6 +73,7 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable(msg.sender){
     
 
     constructor(address _stakeToken, address _rewardToken, uint256 _rewardTokenPerBlock, uint256 _poolStartTime, uint256 _poolEndTime, uint256 _lockupPeriod, address _adminAddress){
+        if(_poolStartTime > _poolEndTime || _lockupPeriod > _poolEndTime) revert StartTimeOrLockUpTimeAfterEndTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerBlock = _rewardTokenPerBlock;
@@ -66,8 +82,6 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable(msg.sender){
         pool.poolEndTime = _poolEndTime;
         pool.lockupPeriod = _lockupPeriod;
         pool.adminAddress = _adminAddress;
-       pool.isActive = false;
-        //pool.lockupPeriod = pool._lockUpPeriod;
     }
   
 
@@ -94,23 +108,23 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable(msg.sender){
         return pendingReward;
     }
 
-    function stake(uint256 amount) external validPoolPeriod{
+    function stake(uint256 amount) external validPoolPeriod poolIsActive{
         updatePool();
         User storage user = pool.userInfo[msg.sender];
         user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
         user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
-        pool.userInfo[msg.sender].amount += amount;
+        user.amount += amount;
         pool.totalStaked += amount;
         pool.stakeToken.safeTransferFrom(msg.sender, address(this) , amount);
         user.stakeTimestamp = block.timestamp;
         emit Stake(msg.sender, amount);
     }
 
-    function unstake(uint256 amount) external nonReentrant validPoolPeriod{
+    function unstake(uint256 amount) external nonReentrant validPoolPeriod poolIsActive{
         updatePool();
         User storage user = pool.userInfo[msg.sender];
-        if(block.timestamp < user.stakeTimestamp + pool.lockupPeriod)
-            revert TokensInLockup(block.timestamp, user.stakeTimestamp + pool.lockupPeriod);
+        if(block.timestamp < pool.lockupPeriod)
+            revert TokensInLockup(block.timestamp, pool.lockupPeriod);
         if (user.amount > amount){
             user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
             user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
@@ -126,10 +140,11 @@ contract  ERC20StakingPool is ReentrancyGuard, Ownable(msg.sender){
         
     }
 
-    function claim() external nonReentrant {
+    function claim() external nonReentrant validPoolPeriod poolIsActive{
         updatePool();
         User storage user = pool.userInfo[msg.sender];
-
+        if(block.timestamp < pool.lockupPeriod)
+            revert TokensInLockup(block.timestamp, pool.lockupPeriod);
         user.unclaimed += (user.amount * pool.accumulatedRewardTokenPerShare) - user.rewardDebt ;
         user.rewardDebt = user.amount * pool.accumulatedRewardTokenPerShare;
         user.claimed += user.unclaimed;
