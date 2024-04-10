@@ -30,7 +30,7 @@ contract StakingFactory is Ownable (msg.sender){
         );
         stakingPools.push(newPoolAddress);
         ERC20StakingPool(newPoolAddress).transferOwnership(msg.sender);
-        IERC20(_rewardToken).safeTransfer(newPoolAddress, (_poolEndTime - _poolStartTime) * _rewardPerBlock);
+        IERC20(_rewardToken).safeTransferFrom(msg.sender, newPoolAddress, (_poolEndTime - _poolStartTime) * _rewardPerBlock);
         emit CreateStakingPool(newPoolAddress);
     }
 }
