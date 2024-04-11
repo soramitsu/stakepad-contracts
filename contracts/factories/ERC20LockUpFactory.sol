@@ -12,14 +12,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract StakingFactory is Ownable {
     using SafeERC20 for IERC20;
     address[] public stakingPools;
-    uint256 public immutable deployFee;
-    error InvalidFee();
     event CreateStakingPool(address indexed stakingAddress);
 
-    constructor(uint256 _deployFee) Ownable(msg.sender) {
-        if (_deployFee > 1e4) revert InvalidFee();
-        deployFee = _deployFee;
-    }
+    constructor() Ownable(msg.sender) {}
 
     function deploy(
         address _stakeToken,
