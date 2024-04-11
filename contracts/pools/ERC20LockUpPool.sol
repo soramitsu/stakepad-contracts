@@ -11,7 +11,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20StakingPool is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
-    error InvalidStartOrLockUpTime();
+    error InvalidStakingPeriod();
+    error InvalidLockupTime();
     error InsufficientAmount(uint256 amount);
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     error PoolNotStarted();
@@ -41,7 +42,8 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
         IERC20 rewardToken;
         uint256 startTime;
         uint256 endTime;
-        uint256 lockupPeriod;
+        uint256 unstakeLockupTime;
+        uint256 claimLockupTime;
         uint256 rewardTokenPerSecond;
         uint256 totalStaked;
         uint256 totalClaimed;
@@ -70,18 +72,20 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
         uint256 _rewardTokenPerSecond,
         uint256 _poolStartTime,
         uint256 _poolEndTime,
-        uint256 _lockupPeriod,
+        uint256 _unstakeLockup,
+        uint256 _claimLockup,
         address _adminAddress
     ) Ownable(msg.sender) {
-        if (_poolStartTime > _poolEndTime || _lockupPeriod > _poolEndTime)
-            revert InvalidStartOrLockUpTime();
+        if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
+        if (_unstakeLockup > _poolEndTime || _claimLockup > _poolEndTime) revert InvalidLockupTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerSecond = _rewardTokenPerSecond;
         pool.lastRewardTimestamp = _poolStartTime;
         pool.startTime = _poolStartTime;
         pool.endTime = _poolEndTime;
-        pool.lockupPeriod = _lockupPeriod;
+        pool.unstakeLockupTime = _unstakeLockup;
+        pool.claimLockupTime = _claimLockup;
         pool.adminWallet = _adminAddress;
     }
 
@@ -104,8 +108,8 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
     }
 
     function unstake(uint256 _amount) external nonReentrant {
-        if (block.timestamp < pool.lockupPeriod)
-            revert TokensInLockup(block.timestamp, pool.lockupPeriod);
+        if (block.timestamp < pool.unstakeLockupTime)
+            revert TokensInLockup(block.timestamp, pool.unstakeLockupTime);
         User storage user = pool.userInfo[msg.sender];
         uint256 amount = user.amount;
         if (amount < _amount) revert InsufficientAmount(amount);
@@ -121,6 +125,8 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
     }
 
     function claim() external nonReentrant {
+        if (block.timestamp < pool.claimLockupTime)
+            revert TokensInLockup(block.timestamp, pool.claimLockupTime);
         _updatePool();
         User storage user = pool.userInfo[msg.sender];
         uint256 amount = user.amount;

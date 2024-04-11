@@ -22,7 +22,8 @@ contract StakingFactory is Ownable {
         uint256 _rewardPerBlock,
         uint256 _poolStartTime,
         uint256 _poolEndTime,
-        uint256 _lockupPeriod
+        uint256 _unstakeLockup,
+        uint256 _claimLockup
     ) public returns (address newPoolAddress) {
         newPoolAddress = address(
             new ERC20StakingPool{
@@ -32,9 +33,7 @@ contract StakingFactory is Ownable {
                         _rewardToken,
                         _rewardPerBlock,
                         _poolStartTime,
-                        _poolEndTime,
-                        _lockupPeriod,
-                        owner()
+                        _poolEndTime
                     )
                 )
             }(
@@ -43,7 +42,8 @@ contract StakingFactory is Ownable {
                 _rewardPerBlock,
                 _poolStartTime,
                 _poolEndTime,
-                _lockupPeriod,
+                _unstakeLockup,
+                _claimLockup,
                 owner()
             )
         );
