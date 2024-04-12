@@ -13,6 +13,7 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
 
     error InvalidStakingPeriod();
     error InvalidLockupTime();
+    error InvalidInput();
     error InsufficientAmount(uint256 amount);
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     error PoolNotStarted();
@@ -90,7 +91,7 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
     }
 
     function stake(uint256 _amount) external validPool {
-        if (_amount == 0) revert InsufficientAmount(_amount);
+        if (_amount == 0) revert InvalidInput();
         _updatePool();
         User storage user = pool.userInfo[msg.sender];
         uint256 share = pool.accRewardPerShare;
@@ -110,6 +111,7 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
     function unstake(uint256 _amount) external nonReentrant {
         if (block.timestamp < pool.unstakeLockupTime)
             revert TokensInLockup(block.timestamp, pool.unstakeLockupTime);
+        if (_amount == 0) revert InvalidInput();
         User storage user = pool.userInfo[msg.sender];
         uint256 amount = user.amount;
         if (amount < _amount) revert InsufficientAmount(amount);
@@ -133,8 +135,8 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
         uint256 pending = user.pending;
         if (amount > 0) {
             pending += (amount * pool.accRewardPerShare) - user.rewardDebt;
+            user.rewardDebt = amount * pool.accRewardPerShare;
         }
-        user.rewardDebt = amount * pool.accRewardPerShare;
         if (pending > 0) {
             user.pending = 0;
             unchecked {
@@ -142,7 +144,7 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
             }
             pool.totalClaimed += pending;
             pool.rewardToken.safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, user.pending);
+            emit Claim(msg.sender, pending);
         }
     }
 
