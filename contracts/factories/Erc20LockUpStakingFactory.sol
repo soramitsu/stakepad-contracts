@@ -4,12 +4,12 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20StakingPool} from "../pools/ERC20LockUpPool.sol";
+import {ERC20LockUpStakingPool} from "../pools/ERC20LockUpStakingPool.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StakingFactory is Ownable {
+contract Erc20LockUpStakingFactory is Ownable {
     using SafeERC20 for IERC20;
     address[] public stakingPools;
     event CreateStakingPool(address indexed stakingAddress);
@@ -26,7 +26,7 @@ contract StakingFactory is Ownable {
         uint256 _claimLockup
     ) public returns (address newPoolAddress) {
         newPoolAddress = address(
-            new ERC20StakingPool{
+            new ERC20LockUpStakingPool{
                 salt: keccak256(
                     abi.encodePacked(
                         _stakeToken,
@@ -48,7 +48,7 @@ contract StakingFactory is Ownable {
             )
         );
         stakingPools.push(newPoolAddress);
-        ERC20StakingPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC20LockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
         IERC20(_rewardToken).safeTransferFrom(
             msg.sender,
             newPoolAddress,
