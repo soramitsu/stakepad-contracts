@@ -8,12 +8,11 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20StakingPool is ReentrancyGuard, Ownable {
+contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     error InvalidStakingPeriod();
     error InvalidLockupTime();
-    error InvalidInput();
     error InsufficientAmount(uint256 amount);
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     error PoolNotStarted();
@@ -91,7 +90,7 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
     }
 
     function stake(uint256 _amount) external validPool {
-        if (_amount == 0) revert InvalidInput();
+        if (_amount == 0) revert InsufficientAmount(_amount);
         _updatePool();
         User storage user = pool.userInfo[msg.sender];
         uint256 share = pool.accRewardPerShare;
@@ -111,7 +110,6 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
     function unstake(uint256 _amount) external nonReentrant {
         if (block.timestamp < pool.unstakeLockupTime)
             revert TokensInLockup(block.timestamp, pool.unstakeLockupTime);
-        if (_amount == 0) revert InvalidInput();
         User storage user = pool.userInfo[msg.sender];
         uint256 amount = user.amount;
         if (amount < _amount) revert InsufficientAmount(amount);
@@ -135,8 +133,8 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
         uint256 pending = user.pending;
         if (amount > 0) {
             pending += (amount * pool.accRewardPerShare) - user.rewardDebt;
-            user.rewardDebt = amount * pool.accRewardPerShare;
         }
+        user.rewardDebt = amount * pool.accRewardPerShare;
         if (pending > 0) {
             user.pending = 0;
             unchecked {
@@ -144,7 +142,7 @@ contract ERC20StakingPool is ReentrancyGuard, Ownable {
             }
             pool.totalClaimed += pending;
             pool.rewardToken.safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending);
+            emit Claim(msg.sender, user.pending);
         }
     }
 
