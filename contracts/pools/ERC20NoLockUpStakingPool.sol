@@ -14,7 +14,6 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     error InvalidStakingPeriod();
     error InvalidLockupTime();
     error InsufficientAmount(uint256 amount);
-    error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     error PoolNotStarted();
     error PoolNotActive();
     error PoolIsActive();
@@ -42,8 +41,6 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
         IERC20 rewardToken;
         uint256 startTime;
         uint256 endTime;
-        //uint256 unstakeLockupTime;
-        //uint256 claimLockupTime;
         uint256 rewardTokenPerSecond;
         uint256 totalStaked;
         uint256 totalClaimed;
@@ -152,8 +149,8 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
             block.timestamp > pool.lastRewardTimestamp && pool.totalStaked > 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
-                block.timestamp,
-                pool.lastRewardTimestamp
+                pool.lastRewardTimestamp,
+                block.timestamp
             );
             uint256 totalNewReward = pool.rewardTokenPerSecond * elapsedPeriod;
             share = share + (totalNewReward / pool.totalStaked);
@@ -165,8 +162,8 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
         if (block.timestamp > pool.lastRewardTimestamp) {
             if (pool.totalStaked > 0) {
                 uint256 elapsedPeriod = _getMultiplier(
-                    block.timestamp,
-                    pool.lastRewardTimestamp
+                    pool.lastRewardTimestamp,
+                    block.timestamp
                 );
                 pool.accRewardPerShare +=
                     (pool.rewardTokenPerSecond * elapsedPeriod) /

@@ -77,7 +77,7 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
         address _adminAddress
     ) Ownable(msg.sender) {
         if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
-        if (_unstakeLockup > _poolEndTime || _claimLockup > _poolEndTime) revert InvalidLockupTime();
+        if (_unstakeLockup > _poolEndTime && _claimLockup > _poolEndTime) revert InvalidLockupTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerSecond = _rewardTokenPerSecond;
@@ -161,8 +161,8 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
             block.timestamp > pool.lastRewardTimestamp && pool.totalStaked > 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
-                block.timestamp,
-                pool.lastRewardTimestamp
+                pool.lastRewardTimestamp,
+                block.timestamp
             );
             uint256 totalNewReward = pool.rewardTokenPerSecond * elapsedPeriod;
             share = share + (totalNewReward / pool.totalStaked);
@@ -174,8 +174,8 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
         if (block.timestamp > pool.lastRewardTimestamp) {
             if (pool.totalStaked > 0) {
                 uint256 elapsedPeriod = _getMultiplier(
-                    block.timestamp,
-                    pool.lastRewardTimestamp
+                    pool.lastRewardTimestamp,
+                    block.timestamp
                 );
                 pool.accRewardPerShare +=
                     (pool.rewardTokenPerSecond * elapsedPeriod) /
