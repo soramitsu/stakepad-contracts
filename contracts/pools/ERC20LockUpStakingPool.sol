@@ -11,7 +11,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
-    error InvalidStakingPeriod();
+    error StartTimeCannotBeMoreThanEndTime();
+    error StartTimeCannotBeLowerThanCurrentTime();
     error InvalidLockupTime();
     error InvalidInput();
     error InsufficientAmount(uint256 amount);
@@ -78,7 +79,8 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
         uint256 _claimLockup,
         address _adminAddress
     ) Ownable(msg.sender) {
-        if (_poolStartTime > _poolEndTime || _poolStartTime < block.timestamp) revert InvalidStakingPeriod();
+        if (_poolStartTime > _poolEndTime) revert StartTimeCannotBeMoreThanEndTime();
+        if (_poolStartTime < block.timestamp) revert StartTimeCannotBeLowerThanCurrentTime();
         if (_unstakeLockup > _poolEndTime && _claimLockup > _poolEndTime) revert InvalidLockupTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
