@@ -22,7 +22,7 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
     error NotAdmin();
 
     modifier onlyAdmin() {
-        if (msg.sender == pool.adminWallet) revert NotAdmin();
+        if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
     }
     modifier validPool() {
@@ -55,6 +55,7 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
         mapping(address => User) userInfo;
     }
     Pool public pool;
+    mapping(address => User) public userInfo;
 
     //Events
     event Stake(address user, uint256 amount);

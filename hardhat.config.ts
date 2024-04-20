@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
@@ -33,6 +34,9 @@ const config: HardhatUserConfig = {
     target: 'ethers-v6',
     dontOverrideCompile: false,
   },
+  paths: {
+    tests: "./tests"
+  }
 };
 
 export default config;
