@@ -20,7 +20,7 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     error NotAdmin();
 
     modifier onlyAdmin() {
-        if (msg.sender == pool.adminWallet) revert NotAdmin();
+        if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
     }
     modifier validPool() {
@@ -71,7 +71,8 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
         uint256 _poolEndTime,
         address _adminAddress
     ) Ownable(msg.sender) {
-        if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
+        if (_poolStartTime > _poolEndTime || _poolStartTime < block.timestamp)
+            revert InvalidStakingPeriod();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerSecond = _rewardTokenPerSecond;
