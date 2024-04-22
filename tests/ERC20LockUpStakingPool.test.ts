@@ -5,6 +5,7 @@ import {
   time,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
+import { ERC20LockUpStakingPool, ERC20MockToken, ERC20LockUpStakingFactory, ERC20LockUpStakingFactory__factory } from "../typechain";
 
 interface DeploymentParams {
   currentTime: number;
@@ -107,6 +108,58 @@ const loadGeneralDeployment = async function () {
     rewardToken,
   };
 };
+
+describe("Contract Deployment", async function(){
+  let staking: ERC20LockUpStakingPool;
+  let StakingFactory: ERC20LockUpStakingFactory__factory;
+  let ercStakingPoolFactory: ERC20LockUpStakingFactory;
+  let mockStakeToken : ERC20MockToken;
+  let mockRewardToken : ERC20MockToken;
+  let currentTime = await latest();
+  let signers = await ethers.getSigners();
+  let rewardTokenPerSecond = ethers.parseEther("1");
+  let poolStartTime :number;
+  let poolEndTime :number;
+  let unstakeLockup :number
+  let claimLockup :number;
+  let [signer] = signers;
+
+  const [adminAddress] = await ethers.getSigners()
+  before(async () => {
+    StakingFactory = await ethers.getContractFactory("ERC20LockUpStakingFactory");
+    ercStakingPoolFactory = await StakingFactory.deploy();
+    const currentTime = await latest();
+  signers = await ethers.getSigners();
+  rewardTokenPerSecond = ethers.parseEther("1");
+  poolStartTime = currentTime;
+  poolEndTime = currentTime + 24 * 60 * 60 * 30;
+  unstakeLockup = currentTime + 24 * 60 * 60;
+  claimLockup = currentTime + 10 * 60;
+  [signer] = signers;
+  const adminAddress = signer.address;
+
+    mockStakeToken = await ethers.deployContract("ERC20MockToken", 
+    ["StakeToken", "STK"]);
+    mockRewardToken = await ethers.deployContract("ERC20MockToken", 
+    ["RewardToken", "RTK"]);
+
+  })
+
+
+  describe("ERC20LockUpStakingPool", async function () {
+    it("Should be successfully deployed", async function () {
+      let poolContract = await ercStakingPoolFactory.deploy(
+        ethers.getAddress(process.env.SampleAddress as string), 
+        ethers.getAddress(process.env.SampleAddress as string), 
+        ethers.parseEther(""+rewardTokenPerSecond),         
+        poolStartTime,                                         
+        poolEndTime,                                           
+        unstakeLockup,                                         
+        claimLockup                                            
+    );
+      expect(poolContract..target).to.be.a.properAddress;
+    });
+  })
 
 describe("ERC20LockUpStakingPool", async function () {
   it("Should be successfully deployed", async function () {
