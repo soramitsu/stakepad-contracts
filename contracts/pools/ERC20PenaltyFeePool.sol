@@ -11,8 +11,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     uint256 public constant PENALTY_FEE = 2500;
+    uint256 public constant COLLECTABLE_FEE = 100;
 
     error InvalidStakingPeriod();
+    error InvalidStartTime();
     error InvalidPenaltyPeriod();
     error InvalidAmount();
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
@@ -23,7 +25,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     error NotAdmin();
 
     modifier onlyAdmin() {
-        if (msg.sender == pool.adminWallet) revert NotAdmin();
+        if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
     }
     modifier validPool() {
@@ -38,6 +40,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         uint256 rewardDebt;
         uint256 pending;
         uint256 penaltyEndTime;
+        bool penalized;
     }
 
     struct Pool {
@@ -53,6 +56,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         uint256 lastRewardTimestamp;
         uint256 accRewardPerShare;
         bool isActive;
+        bool isCollectFee;
         address adminWallet;
         mapping(address => User) userInfo;
     }
@@ -62,7 +66,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     event Stake(address user, uint256 amount);
     event Unstake(address user, uint256 amount);
     event Claim(address user, uint256 amount);
-    event ActivatePool();
+    event ActivatePool(uint256 rewardAmount);
     event UpdatePool(
         uint256 totalStaked,
         uint256 accumulatedRewardTokenPerShare,
@@ -76,11 +80,13 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         uint256 _poolStartTime,
         uint256 _poolEndTime,
         uint256 _penaltyPeriod,
+        bool _isCollectFee,
         address _adminAddress
     ) Ownable(msg.sender) {
         if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
         if (_poolEndTime - _poolStartTime > _penaltyPeriod)
             revert InvalidPenaltyPeriod();
+        if (_poolStartTime < block.timestamp) revert InvalidStartTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerSecond = _rewardTokenPerSecond;
@@ -88,6 +94,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         pool.startTime = _poolStartTime;
         pool.endTime = _poolEndTime;
         pool.penaltyPeriod = _penaltyPeriod;
+        pool.isCollectFee = _isCollectFee;
         pool.adminWallet = _adminAddress;
     }
 
@@ -119,14 +126,8 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         uint256 amount = user.amount;
         if (amount < _amount) revert InsufficientAmount(amount);
         _updatePool();
-        uint pending = user.pending;
-        pending += (amount * pool.accRewardPerShare) - user.rewardDebt;
-        uint256 penalty = calculatePenaltyFee(
-            user.penaltyEndTime,
-            pending
-        );
-        // Calculate penalty fee
-        user.pending = pending - penalty;
+        if (block.timestamp < user.penaltyEndTime) user.penalized = true;
+        user.pending += (amount * pool.accRewardPerShare) - user.rewardDebt;
         unchecked {
             user.amount -= _amount;
         }
@@ -149,10 +150,17 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         }
         if (pending > 0) {
             user.pending = 0;
+            uint256 penalityAmount = _calculatePenalizedAmount(
+                user.penalized,
+                pending
+            );
+            pending -= penalityAmount;
+            if (user.penalized) user.penalized = false;
             unchecked {
                 user.claimed += pending;
             }
             pool.totalClaimed += pending;
+            pool.totalPenalties += penalityAmount;
             pool.rewardToken.safeTransfer(msg.sender, pending);
             emit Claim(msg.sender, pending);
         }
@@ -160,8 +168,11 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
 
     function activate() external onlyAdmin {
         if (pool.isActive) revert PoolIsActive();
+        uint256 rewardAmount = (pool.endTime - pool.startTime) *
+            pool.rewardTokenPerSecond;
+        pool.rewardToken.safeTransferFrom(owner(), address(this), rewardAmount);
         pool.isActive = true;
-        emit ActivatePool();
+        emit ActivatePool(rewardAmount);
     }
 
     function pendingRewards(
@@ -179,20 +190,8 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
             uint256 totalNewReward = pool.rewardTokenPerSecond * elapsedPeriod;
             share = share + (totalNewReward / pool.totalStaked);
         }
-        return (user.amount * share) - user.rewardDebt;
-    }
-
-    function calculatePenaltyFee(
-        uint256 _penaltyEndTime,
-        uint256 _amountToPenalize
-    ) public view returns (uint256) {
-        if (block.timestamp > _penaltyEndTime) {
-            // Flat 1% penalty fee in basis points if the penalty period has already ended
-            return (_amountToPenalize * 100) / 10000;
-
-            
-        }
-        return (_amountToPenalize * PENALTY_FEE) / 10000;
+        uint256 pending = (user.amount * share) - user.rewardDebt;
+        return pending - _calculatePenalizedAmount(user.penalized, pending);
     }
 
     function _updatePool() internal {
@@ -213,6 +212,17 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
                 block.timestamp
             );
         }
+    }
+
+    function _calculatePenalizedAmount(
+        bool penalized,
+        uint256 _amountToPenalize
+    ) internal pure returns (uint256) {
+        if (!penalized) {
+            // Flat 1% penalty fee in basis points if the penalty period has already ended
+            return (_amountToPenalize * COLLECTABLE_FEE) / 10000;
+        }
+        return (_amountToPenalize * PENALTY_FEE) / 10000;
     }
 
     /**
