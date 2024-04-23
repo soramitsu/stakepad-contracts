@@ -10,12 +10,12 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
-    uint256 public constant MAX_PENALTY_FEE = 2500;
-    uint256 public constant MIN_PENALTY_FEE = 100;
+    uint256 public constant PENALTY_FEE = 2500;
 
     error InvalidStakingPeriod();
     error InvalidPenaltyPeriod();
     error InvalidAmount();
+    error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     error InsufficientAmount(uint256 amount);
     error PoolNotStarted();
     error PoolNotActive();
@@ -122,7 +122,6 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         uint pending = user.pending;
         pending += (amount * pool.accRewardPerShare) - user.rewardDebt;
         uint256 penalty = calculatePenaltyFee(
-            pool.penaltyPeriod,
             user.penaltyEndTime,
             pending
         );
@@ -138,8 +137,10 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     }
 
     function claim() external nonReentrant {
-        _updatePool();
         User storage user = pool.userInfo[msg.sender];
+        if (block.timestamp < user.penaltyEndTime)
+            revert TokensInLockup(block.timestamp, user.penaltyEndTime);
+        _updatePool();
         uint256 amount = user.amount;
         uint256 pending = user.pending;
         if (amount > 0) {
@@ -182,23 +183,16 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     }
 
     function calculatePenaltyFee(
-        uint256 _penaltyPeriod,
         uint256 _penaltyEndTime,
         uint256 _amountToPenalize
     ) public view returns (uint256) {
         if (block.timestamp > _penaltyEndTime) {
             // Flat 1% penalty fee in basis points if the penalty period has already ended
             return (_amountToPenalize * 100) / 10000;
+
+            
         }
-        // Calculate the time remaining in the penalty period
-        uint256 remainingTime = _penaltyEndTime - block.timestamp;
-        // Calculate the percentage of penalty fee based on the remaining time
-        // Penalty fee increases linearly as the remaining time decreases
-        uint256 penaltyFee = MIN_PENALTY_FEE +
-            ((MAX_PENALTY_FEE - MIN_PENALTY_FEE) *
-                (_penaltyPeriod - remainingTime)) /
-            _penaltyPeriod;
-        return (_amountToPenalize * penaltyFee) / 10000;
+        return (_amountToPenalize * PENALTY_FEE) / 10000;
     }
 
     function _updatePool() internal {
