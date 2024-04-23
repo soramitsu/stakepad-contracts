@@ -11,8 +11,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
-    error StartTimeCannotBeMoreThanEndTime();
-    error StartTimeCannotBeLowerThanCurrentTime();
+    error InvalidStakingPeriod();
+    error InvalidStartTime();
     error InvalidLockupTime();
     error InsufficientAmount(uint256 amount);
     error PoolNotStarted();
@@ -57,7 +57,7 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     event Stake(address user, uint256 amount);
     event Unstake(address user, uint256 amount);
     event Claim(address user, uint256 amount);
-    event ActivatePool();
+    event ActivatePool(uint256 rewardAmount);
     event UpdatePool(
         uint256 totalStaked,
         uint256 accumulatedRewardTokenPerShare,
@@ -72,8 +72,8 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
         uint256 _poolEndTime,
         address _adminAddress
     ) Ownable(msg.sender) {
-        if (_poolStartTime > _poolEndTime) revert StartTimeCannotBeMoreThanEndTime();
-        if (_poolStartTime < block.timestamp) revert StartTimeCannotBeLowerThanCurrentTime();
+        if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
+        if (_poolStartTime < block.timestamp) revert InvalidStartTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerSecond = _rewardTokenPerSecond;
@@ -123,8 +123,8 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
         uint256 pending = user.pending;
         if (amount > 0) {
             pending += (amount * pool.accRewardPerShare) - user.rewardDebt;
+            user.rewardDebt = amount * pool.accRewardPerShare;
         }
-        user.rewardDebt = amount * pool.accRewardPerShare;
         if (pending > 0) {
             user.pending = 0;
             unchecked {
@@ -132,19 +132,25 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
             }
             pool.totalClaimed += pending;
             pool.rewardToken.safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, user.pending);
+            emit Claim(msg.sender, pending);
         }
     }
 
     function activate() external onlyAdmin {
         if (pool.isActive) revert PoolIsActive();
+        uint256 rewardAmaount = (pool.endTime - pool.startTime) * pool.rewardTokenPerSecond;
+        pool.rewardToken.safeTransferFrom(
+            owner(),
+            address(this),
+            rewardAmaount
+        );
         pool.isActive = true;
-        emit ActivatePool();
+        emit ActivatePool(rewardAmaount);
     }
 
     function pendingRewards(
         address _userAddress
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         User storage user = pool.userInfo[_userAddress];
         uint256 share = pool.accRewardPerShare;
         if (

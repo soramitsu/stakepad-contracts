@@ -12,14 +12,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20NoLockUpStakingFactory is Ownable {
     using SafeERC20 for IERC20;
     address[] public stakingPools;
-    event CreateStakingPool(address indexed stakingAddress);
+    event CreateStakingPool(address indexed stakingAddress, address indexed stakeToken, address indexed rewardToken, uint256 rewardPerSecond, uint256 startTime, uint256 endTime, address owner);
 
     constructor() Ownable(msg.sender) {}
 
     function deploy(
         address _stakeToken,
         address _rewardToken,
-        uint256 _rewardPerBlock,
+        uint256 _rewardPerSecond,
         uint256 _poolStartTime,
         uint256 _poolEndTime
     ) public returns (address newPoolAddress) {
@@ -29,7 +29,7 @@ contract ERC20NoLockUpStakingFactory is Ownable {
                     abi.encodePacked(
                         _stakeToken,
                         _rewardToken,
-                        _rewardPerBlock,
+                        _rewardPerSecond,
                         _poolStartTime,
                         _poolEndTime
                     )
@@ -37,7 +37,7 @@ contract ERC20NoLockUpStakingFactory is Ownable {
             }(
                 _stakeToken,
                 _rewardToken,
-                _rewardPerBlock,
+                _rewardPerSecond,
                 _poolStartTime,
                 _poolEndTime,
                 owner()
@@ -45,11 +45,6 @@ contract ERC20NoLockUpStakingFactory is Ownable {
         );
         stakingPools.push(newPoolAddress);
         ERC20NoLockUpStakingFactory(newPoolAddress).transferOwnership(msg.sender);
-        IERC20(_rewardToken).safeTransferFrom(
-            msg.sender,
-            newPoolAddress,
-            (_poolEndTime - _poolStartTime) * _rewardPerBlock
-        );
-        emit CreateStakingPool(newPoolAddress);
+        emit CreateStakingPool(newPoolAddress, _stakeToken, _rewardToken, _rewardPerSecond, _poolStartTime, _poolEndTime, msg.sender);
     }
 }
