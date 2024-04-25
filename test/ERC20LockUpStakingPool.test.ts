@@ -13,6 +13,7 @@ import {
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { assert } from "console";
+import { parseEther } from "ethers";
 
 interface DeploymentParams {
   currentTime: number;
@@ -53,7 +54,6 @@ const standardParams = async function () {
 };
 
 describe("Contract Deployment", async function () {
-  let staking: ERC20LockUpStakingPool;
   let StakingFactory: ERC20LockUpStakingFactory__factory;
   let ercStakingPoolFactory: ERC20LockUpStakingFactory;
   let mockStakeToken: ERC20MockToken;
@@ -66,6 +66,7 @@ describe("Contract Deployment", async function () {
   let unstakeLockup: number;
   let claimLockup: number;
   let signer: HardhatEthersSigner;
+  let ayo: HardhatEthersSigner;
   let poolContract: ERC20LockUpStakingPool;
 
   before(async () => {
@@ -80,7 +81,7 @@ describe("Contract Deployment", async function () {
     poolEndTime = currentTime;
     unstakeLockup = currentTime;
     claimLockup = currentTime;
-    [signer] = signers;
+    [signer, ayo] = signers;
     const adminAddress = signer.address;
 
     mockStakeToken = await ethers.deployContract("ERC20MockToken", [
@@ -88,6 +89,7 @@ describe("Contract Deployment", async function () {
       "StakeToken",
       "STK",
     ]);
+
     mockRewardToken = await ethers.deployContract("ERC20MockToken", [
       18,
       "RewardToken",
@@ -203,28 +205,78 @@ describe("Contract Deployment", async function () {
         poolContract.stake(ethers.parseEther("100"))
       ).revertedWithCustomError(poolContract, "PoolNotStarted");
     });
+
     it("Pool: Activate pool", async function () {
       time.increaseTo(poolStartTime);
+      //First mint reward tokens for user before activating pool
+      mockRewardToken.mint(
+        signer.address,
+        ethers.parseEther("20000000000000000000000000000000000000000")
+      );
+      //Approve user inorder to transfer tokens to pool
+      await mockRewardToken
+        .connect(signer)
+        .approve(
+          poolContract.target,
+          parseEther("2000000000000000000000000000000000000000")
+        );
       await poolContract.connect(signer).activate();
       expect((await poolContract.pool()).isActive).to.equal(true);
     });
     it("Stake fail: (InsufficientAmount)", async function () {
       time.increaseTo(poolStartTime);
       let amount = ethers.parseEther("0");
-      poolContract.stake(ethers.parseEther("0")).catch((error: any) => {
-        console.log("Error Type:", error.message);
-      });
-      expect(
-        poolContract.stake(amount).catch((error: any) => {
+      poolContract.stake(ethers.parseEther("0"));
+      expect(poolContract.stake(amount)).revertedWithCustomError(
+        poolContract,
+        "InsufficientAmount"
+      );
+    });
+    it("Stake: Expect Emit (Stake)", async function () {
+      //First mint stake tokens for user
+      mockStakeToken.mint(
+        ayo.address,
+        ethers.parseEther("20000000000000000000000000000000000000000")
+      );
+      //Approve user to transfer tokens
+      await mockStakeToken
+        .connect(ayo)
+        .approve(
+          poolContract.target,
+          parseEther("2000000000000000000000000000000000000000")
+        );
+
+      //Stake
+      let amount = ethers.parseEther("100");
+      await poolContract
+        .connect(ayo)
+        .stake(amount)
+        .catch((error: any) => {
           console.log("Error Type:", error.message);
-        })
-      ).revertedWithCustomError(poolContract, "InsufficientAmount");
+        });
+      expect(await poolContract.connect(ayo).stake(amount)).emit(
+        poolContract,
+        "Stake" //TODO: expect works for any string, even empty string
+      );
     });
     it("Stake: Expect total staked to increase", async function () {
-      let amount = ethers.parseEther("10");
+      await mockStakeToken
+        .connect(ayo)
+        .approve(
+          poolContract.target,
+          parseEther("2000000000000000000000000000000000000000")
+        );
       let stakingPool = await poolContract.pool();
-      poolContract.stake(amount);
-      expect(stakingPool.totalStaked).to.equal(amount);
+      let amount = ethers.parseEther("100");
+      //Stake
+      await poolContract
+        .connect(ayo)
+        .stake(amount)
+        .catch((error: any) => {
+          console.log("Error Type:", error.message);
+        });
+      await poolContract.connect(ayo).stake(amount);
+      expect(stakingPool.totalStaked).to.equal(amount + amount);
     });
   });
 });
