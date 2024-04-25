@@ -79,7 +79,7 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
     ) Ownable(msg.sender) {
         if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
         if (_poolStartTime < block.timestamp) revert InvalidStartTime();
-        if (_unstakeLockup > _poolEndTime && _claimLockup > _poolEndTime) revert InvalidLockupTime();
+        if (_unstakeLockup > _poolEndTime || _claimLockup > _poolEndTime) revert InvalidLockupTime();
         pool.stakeToken = IERC20(_stakeToken);
         pool.rewardToken = IERC20(_rewardToken);
         pool.rewardTokenPerSecond = _rewardTokenPerSecond;
