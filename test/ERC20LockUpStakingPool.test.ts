@@ -12,9 +12,7 @@ import {
   ERC20LockUpStakingFactory__factory,
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { assert } from "console";
 import { parseEther } from "ethers";
-import { emit } from "process";
 
 interface DeploymentParams {
   currentTime: number;
@@ -59,7 +57,6 @@ describe("Contract Deployment", async function () {
   let ercStakingPoolFactory: ERC20LockUpStakingFactory;
   let mockStakeToken: ERC20MockToken;
   let mockRewardToken: ERC20MockToken;
-  let currentTime: number;
   let signers: HardhatEthersSigner[];
   let rewardTokenPerSecond: bigint;
   let poolStartTime: number;
@@ -75,26 +72,26 @@ describe("Contract Deployment", async function () {
       "ERC20LockUpStakingFactory"
     );
     ercStakingPoolFactory = await StakingFactory.deploy();
-    const currentTime = await latest();
+    const blockTimestamp = await time.latest();
     signers = await ethers.getSigners();
     rewardTokenPerSecond = ethers.parseEther("1");
-    poolStartTime = currentTime;
-    poolEndTime = currentTime;
-    unstakeLockup = currentTime;
-    claimLockup = currentTime;
+    poolStartTime = blockTimestamp;
+    poolEndTime = blockTimestamp;
+    unstakeLockup = blockTimestamp;
+    claimLockup = blockTimestamp;
     [signer, ayo] = signers;
     const adminAddress = signer.address;
 
     mockStakeToken = await ethers.deployContract("ERC20MockToken", [
-      18,
       "StakeToken",
       "STK",
+      18
     ]);
 
     mockRewardToken = await ethers.deployContract("ERC20MockToken", [
-      18,
       "RewardToken",
       "RTK",
+      18
     ]);
   });
 
@@ -102,9 +99,9 @@ describe("Contract Deployment", async function () {
     it("Deployment fail: start Time less than block time (InvalidStartTime)", async function () {
       await expect(
         ercStakingPoolFactory.deploy(
-          mockStakeToken.getAddress(),
-          mockRewardToken.getAddress(),
-          ethers.parseEther("" + rewardTokenPerSecond),
+          await mockStakeToken.getAddress(),
+          await mockRewardToken.getAddress(),
+          rewardTokenPerSecond,
           poolStartTime,
           poolEndTime + 24 * 60 * 60 * 30,
           unstakeLockup + 24 * 60 * 60,
@@ -116,9 +113,9 @@ describe("Contract Deployment", async function () {
     it("Deployment fail: end Time less than start time (InvalidStakingPeriod)", async function () {
       await expect(
         ercStakingPoolFactory.deploy(
-          mockStakeToken.getAddress(),
-          mockRewardToken.getAddress(),
-          ethers.parseEther("" + rewardTokenPerSecond),
+          await mockStakeToken.getAddress(),
+          await mockRewardToken.getAddress(),
+          rewardTokenPerSecond,
           poolStartTime + 100,
           poolEndTime,
           unstakeLockup + 100 + 100,
@@ -129,9 +126,9 @@ describe("Contract Deployment", async function () {
     it("Deployment fail: end Time less than unstake lockup time (InvalidLockupTime)", async function () {
       await expect(
         ercStakingPoolFactory.deploy(
-          mockStakeToken.getAddress(),
-          mockRewardToken.getAddress(),
-          ethers.parseEther("" + rewardTokenPerSecond),
+          await mockStakeToken.getAddress(),
+          await mockRewardToken.getAddress(),
+          rewardTokenPerSecond,
           poolStartTime + 100,
           poolEndTime + +100 + 10,
           unstakeLockup + 100 + 10 + 10,
@@ -142,9 +139,9 @@ describe("Contract Deployment", async function () {
     it("Deployment fail: end Time less than claim lockup time (InvalidLockupTime)", async function () {
       await expect(
         ercStakingPoolFactory.deploy(
-          mockStakeToken.getAddress(),
-          mockRewardToken.getAddress(),
-          ethers.parseEther("" + rewardTokenPerSecond),
+          await mockStakeToken.getAddress(),
+          await mockRewardToken.getAddress(),
+          rewardTokenPerSecond,
           poolStartTime + 100,
           poolEndTime + +100 + 10 + 10,
           unstakeLockup + 100 + 10,
@@ -155,13 +152,13 @@ describe("Contract Deployment", async function () {
 
     it("Should be successfully deployed", async function () {
       poolStartTime += 100;
-      poolEndTime += +100 + 10 + 10;
-      unstakeLockup += 100 + 10;
-      claimLockup += 100 + 10;
+      poolEndTime = poolStartTime + 120;
+      unstakeLockup = poolStartTime + 10;
+      claimLockup = poolStartTime + 10;
       let contractTransaction = await ercStakingPoolFactory.deploy(
-        mockStakeToken.getAddress(),
-        mockRewardToken.getAddress(),
-        ethers.parseEther("" + rewardTokenPerSecond),
+        await mockStakeToken.getAddress(),
+        await mockRewardToken.getAddress(),
+        rewardTokenPerSecond,
         poolStartTime,
         poolEndTime,
         unstakeLockup,
@@ -193,30 +190,29 @@ describe("Contract Deployment", async function () {
 
   describe("Pool Interactions", async function () {
     it("Stake fail: (PoolNotStarted)", async function () {
-      expect(
+      await expect(
         poolContract.stake(ethers.parseEther("100"))
       ).revertedWithCustomError(poolContract, "PoolNotStarted");
     });
     it("Stake fail: (PoolNotActive)", async function () {
-      time.increaseTo(poolStartTime);
-      poolContract.stake(ethers.parseEther("500"));
-      expect(
+      await time.increaseTo(poolStartTime);
+      await expect(
         poolContract.stake(ethers.parseEther("500"))
-      ).revertedWithCustomError(poolContract, "PoolNotStarted");
+      ).revertedWithCustomError(poolContract, "PoolNotActive");
     });
 
     it("Pool: Activate pool", async function () {
       //First mint reward tokens for user before activating pool
-      mockRewardToken.mint(
+      await mockRewardToken.mint(
         signer.address,
-        ethers.parseEther("20000000000000000000000000000000000000000")
+        ethers.parseEther("2000000000")
       );
       //Approve user inorder to transfer tokens to pool
       await mockRewardToken
         .connect(signer)
         .approve(
           poolContract.target,
-          parseEther("2000000000000000000000000000000000000000")
+          parseEther("2000000000")
         );
       await poolContract.connect(signer).activate();
       expect((await poolContract.pool()).isActive).to.equal(true);
@@ -224,8 +220,7 @@ describe("Contract Deployment", async function () {
 
     it("Stake fail: (InsufficientAmount)", async function () {
       let amount = ethers.parseEther("0");
-      poolContract.stake(ethers.parseEther("0"));
-      expect(poolContract.stake(amount)).revertedWithCustomError(
+      await expect(poolContract.stake(amount)).revertedWithCustomError(
         poolContract,
         "InsufficientAmount"
       );
@@ -233,25 +228,25 @@ describe("Contract Deployment", async function () {
 
     it("Stake: Expect Emit (Stake)", async function () {
       //First mint stake tokens for user
-      mockStakeToken.mint(
+      await mockStakeToken.mint(
         ayo.address,
-        ethers.parseEther("10000000000000000000000000000000000000000")
+        ethers.parseEther("10000000000000000000000")
       );
       //Approve user to transfer tokens
       await mockStakeToken
         .connect(ayo)
         .approve(
           poolContract.target,
-          parseEther("1000000000000000000000000000000000000000")
+          parseEther("10000000000000000000000")
         );
 
       //Stake
       let amount = ethers.parseEther("100");
-      expect(await poolContract.connect(ayo).stake(amount)).emit(
+      await expect(poolContract.connect(ayo).stake(amount)).emit(
         poolContract,
         "Stake" //TODO: expect works for any string, even empty string
       );
-      time.increase(1000);
+      await time.increase(5);
     });
 
     it("Stake: Expect total staked to increase", async function () {
@@ -262,14 +257,14 @@ describe("Contract Deployment", async function () {
 
     it("UnStake: Expect Unstake Emit", async function () {
       let amount = ethers.parseEther("50");
-      expect(
-        await poolContract.connect(ayo).unstake(amount)
-      ).emit(poolContract, "UnStake");
+      await expect(
+        poolContract.connect(ayo).unstake(amount)
+      ).emit(poolContract, "Unstake");
     });
 
     it("UnStake: Expect Unstake Emit", async function () {
       let amount = ethers.parseEther("50");
-      
+
       let balance = await mockStakeToken.balanceOf(poolContract.target)
       let totalStaked = (await poolContract.pool()).totalStaked
       await poolContract.connect(ayo).unstake(amount);
@@ -279,8 +274,8 @@ describe("Contract Deployment", async function () {
       expect((await poolContract.pool()).totalStaked).to.equal(amount + amount);
     });
 
-    it("Pending Rewards", async function(){
-      let pendingRewards = await poolContract.connect(ayo).pendingRewards(ayo.address)
+    it("Pending Rewards", async function () {
+      let pendingRewards = await poolContract.pendingRewards(ayo.address)
       let stakingPool = await poolContract.pool()
       console.log("Current Time:", await time.latest())
       logPool(stakingPool)
@@ -303,7 +298,7 @@ function logPool(stakingPool: {
   accRewardPerShare: bigint;
   isActive: boolean;
   adminWallet: string;
-}){
+}) {
   console.log({
     stakingPool: stakingPool.stakeToken,
     rewardToken: stakingPool.rewardToken,
@@ -317,5 +312,6 @@ function logPool(stakingPool: {
     lastRewardTimestamp: stakingPool.lastRewardTimestamp,
     accRewardPerShare: stakingPool.accRewardPerShare,
     isActive: stakingPool.isActive,
-    adminWallet: stakingPool.adminWallet})
+    adminWallet: stakingPool.adminWallet
+  })
 }
