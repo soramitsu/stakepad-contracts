@@ -14,6 +14,7 @@ import {
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { assert } from "console";
 import { parseEther } from "ethers";
+import { emit } from "process";
 
 interface DeploymentParams {
   currentTime: number;
@@ -198,16 +199,13 @@ describe("Contract Deployment", async function () {
     });
     it("Stake fail: (PoolNotActive)", async function () {
       time.increaseTo(poolStartTime);
-      poolContract.stake(ethers.parseEther("100")).catch((error: any) => {
-        console.log("Error Type:", error.message);
-      });
+      poolContract.stake(ethers.parseEther("500"));
       expect(
-        poolContract.stake(ethers.parseEther("100"))
+        poolContract.stake(ethers.parseEther("500"))
       ).revertedWithCustomError(poolContract, "PoolNotStarted");
     });
 
     it("Pool: Activate pool", async function () {
-      time.increaseTo(poolStartTime);
       //First mint reward tokens for user before activating pool
       mockRewardToken.mint(
         signer.address,
@@ -223,8 +221,8 @@ describe("Contract Deployment", async function () {
       await poolContract.connect(signer).activate();
       expect((await poolContract.pool()).isActive).to.equal(true);
     });
+
     it("Stake fail: (InsufficientAmount)", async function () {
-      time.increaseTo(poolStartTime);
       let amount = ethers.parseEther("0");
       poolContract.stake(ethers.parseEther("0"));
       expect(poolContract.stake(amount)).revertedWithCustomError(
@@ -232,51 +230,92 @@ describe("Contract Deployment", async function () {
         "InsufficientAmount"
       );
     });
+
     it("Stake: Expect Emit (Stake)", async function () {
       //First mint stake tokens for user
       mockStakeToken.mint(
         ayo.address,
-        ethers.parseEther("20000000000000000000000000000000000000000")
+        ethers.parseEther("10000000000000000000000000000000000000000")
       );
       //Approve user to transfer tokens
       await mockStakeToken
         .connect(ayo)
         .approve(
           poolContract.target,
-          parseEther("2000000000000000000000000000000000000000")
+          parseEther("1000000000000000000000000000000000000000")
         );
 
       //Stake
       let amount = ethers.parseEther("100");
-      await poolContract
-        .connect(ayo)
-        .stake(amount)
-        .catch((error: any) => {
-          console.log("Error Type:", error.message);
-        });
       expect(await poolContract.connect(ayo).stake(amount)).emit(
         poolContract,
         "Stake" //TODO: expect works for any string, even empty string
       );
+      time.increase(1000);
     });
+
     it("Stake: Expect total staked to increase", async function () {
-      await mockStakeToken
-        .connect(ayo)
-        .approve(
-          poolContract.target,
-          parseEther("2000000000000000000000000000000000000000")
-        );
-      let stakingPool = await poolContract.pool();
       let amount = ethers.parseEther("100");
-      //Stake
-      await poolContract
-        .connect(ayo)
-        .stake(amount)
-        .catch((error: any) => {
-          console.log("Error Type:", error.message);
-        });
       await poolContract.connect(ayo).stake(amount);
-      expect(stakingPool.totalStaked).to.equal(amount + amount);
+      expect((await poolContract.pool()).totalStaked).to.equal(amount + amount);
     });
+
+    it("UnStake: Expect Unstake Emit", async function () {
+      let amount = ethers.parseEther("50");
+      expect(
+        await poolContract.connect(ayo).unstake(amount)
+      ).emit(poolContract, "UnStake");
+    });
+
+    it("UnStake: Expect Unstake Emit", async function () {
+      let amount = ethers.parseEther("50");
+      
+      let balance = await mockStakeToken.balanceOf(poolContract.target)
+      let totalStaked = (await poolContract.pool()).totalStaked
+      await poolContract.connect(ayo).unstake(amount);
+
+      balance = await mockStakeToken.balanceOf(poolContract.target)
+      totalStaked = (await poolContract.pool()).totalStaked
+      expect((await poolContract.pool()).totalStaked).to.equal(amount + amount);
+    });
+
+    it("Pending Rewards", async function(){
+      let pendingRewards = await poolContract.connect(ayo).pendingRewards(ayo.address)
+      let stakingPool = await poolContract.pool()
+      console.log("Current Time:", await time.latest())
+      logPool(stakingPool)
+      expect(pendingRewards).to.be.greaterThan(0)
+    })
   });
 });
+
+function logPool(stakingPool: {
+  stakeToken: string;
+  rewardToken: string;
+  startTime: bigint;
+  endTime: bigint;
+  unstakeLockupTime: bigint;
+  claimLockupTime: bigint;
+  rewardTokenPerSecond: bigint;
+  totalStaked: bigint;
+  totalClaimed: bigint;
+  lastRewardTimestamp: bigint;
+  accRewardPerShare: bigint;
+  isActive: boolean;
+  adminWallet: string;
+}){
+  console.log({
+    stakingPool: stakingPool.stakeToken,
+    rewardToken: stakingPool.rewardToken,
+    startTime: stakingPool.startTime,
+    endTime: stakingPool.endTime,
+    unstakeLockupTime: stakingPool.unstakeLockupTime,
+    claimLockupTime: stakingPool.claimLockupTime,
+    rewardTokenPerSecond: stakingPool.rewardTokenPerSecond,
+    totalStaked: stakingPool.totalStaked,
+    totalClaimed: stakingPool.totalClaimed,
+    lastRewardTimestamp: stakingPool.lastRewardTimestamp,
+    accRewardPerShare: stakingPool.accRewardPerShare,
+    isActive: stakingPool.isActive,
+    adminWallet: stakingPool.adminWallet})
+}
