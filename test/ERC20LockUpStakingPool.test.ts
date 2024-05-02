@@ -25,7 +25,21 @@ interface DeploymentParams {
   stakeToken: string;
   rewardToken: string;
 }
+class User { 
+  amount: bigint;
+  rewardDebt: bigint;
+  pending: bigint;
+  claimed: bigint;
 
+  constructor() {
+    this.amount = ethers.parseEther("0");
+    this.rewardDebt = ethers.parseEther("0");
+    this.pending = ethers.parseEther("0");
+    this.claimed = ethers.parseEther("0");
+  }
+}
+let userDetails : Record<string, User> = {}
+let PRECISION_FACTOR = BigInt(10e18);
 const standardParams = async function () {
   const currentTime = await latest();
   const signers = await ethers.getSigners();
@@ -65,6 +79,8 @@ describe("Contract Deployment", async function () {
   let claimLockup: number;
   let signer: HardhatEthersSigner;
   let ayo: HardhatEthersSigner;
+  let alina: HardhatEthersSigner;
+  let vartan: HardhatEthersSigner;
   let poolContract: ERC20LockUpStakingPool;
 
   before(async () => {
@@ -79,7 +95,12 @@ describe("Contract Deployment", async function () {
     poolEndTime = blockTimestamp;
     unstakeLockup = blockTimestamp;
     claimLockup = blockTimestamp;
-    [signer, ayo] = signers;
+    [signer, ayo, alina, vartan] = signers;
+    userDetails[ayo.address] = new User();
+    userDetails[alina.address] = new User();
+    rewardPerShare = BigInt(0)
+    lastUpdateTime = BigInt(0)
+    totalStaked = BigInt(0)
     const adminAddress = signer.address;
 
     mockStakeToken = await ethers.deployContract("ERC20MockToken", [
@@ -170,6 +191,7 @@ describe("Contract Deployment", async function () {
         receipt?.logs[0].address as string
       );
       expect(poolContract.target).to.be.a.properAddress;
+      lastUpdateTime = BigInt(poolStartTime)
     });
 
     it("Should correctly set contract parameters", async function () {
@@ -242,10 +264,12 @@ describe("Contract Deployment", async function () {
 
       //Stake
       let amount = ethers.parseEther("100");
+      
       await expect(poolContract.connect(ayo).stake(amount)).emit(
         poolContract,
-        "Stake" //TODO: expect works for any string, even empty string
+        "Stake"
       );
+      Stake(ayo, amount, await poolContract.pool())
       await time.increase(5);
     });
 
@@ -253,6 +277,7 @@ describe("Contract Deployment", async function () {
       let amount = ethers.parseEther("100");
       await poolContract.connect(ayo).stake(amount);
       expect((await poolContract.pool()).totalStaked).to.equal(amount + amount);
+      Stake(ayo, amount, await poolContract.pool())
     });
 
     it("UnStake: Expect Unstake Emit", async function () {
@@ -260,15 +285,16 @@ describe("Contract Deployment", async function () {
       await expect(
         poolContract.connect(ayo).unstake(amount)
       ).emit(poolContract, "Unstake");
+      UnStake(ayo, amount, await poolContract.pool())
     });
 
-    it("UnStake: Expect Unstake Emit", async function () {
+    it("UnStake: Expect Total Staked to equal stake token balance", async function () {
       let amount = ethers.parseEther("50");
 
       let balance = await mockStakeToken.balanceOf(poolContract.target)
       let totalStaked = (await poolContract.pool()).totalStaked
-      await poolContract.connect(ayo).unstake(amount);
-
+      await expect(poolContract.connect(ayo).unstake(amount)).emit(poolContract, "Unstake");
+      UnStake(ayo, amount, await poolContract.pool())
       balance = await mockStakeToken.balanceOf(poolContract.target)
       totalStaked = (await poolContract.pool()).totalStaked
       expect((await poolContract.pool()).totalStaked).to.equal(amount + amount);
@@ -281,24 +307,100 @@ describe("Contract Deployment", async function () {
       logPool(stakingPool)
       expect(pendingRewards).to.be.greaterThan(0)
     })
-  });
-});
 
-function logPool(stakingPool: {
-  stakeToken: string;
-  rewardToken: string;
-  startTime: bigint;
-  endTime: bigint;
-  unstakeLockupTime: bigint;
-  claimLockupTime: bigint;
-  rewardTokenPerSecond: bigint;
-  totalStaked: bigint;
-  totalClaimed: bigint;
-  lastRewardTimestamp: bigint;
-  accRewardPerShare: bigint;
-  isActive: boolean;
-  adminWallet: string;
-}) {
+    it("Claim Rewards: Reward Token balance should increase by amount claimed", async function () {
+      let initialBalance = await mockRewardToken.balanceOf(ayo.address)
+      await expect(poolContract.connect(ayo).claim()).emit(poolContract, "Claim");
+      let pool = await poolContract.pool()
+      let newBalance = await mockRewardToken.balanceOf(ayo.address)
+      Claim(ayo, newBalance, pool)
+      userDetails[ayo.address].claimed += (newBalance - initialBalance);
+      expect(newBalance).to.be.greaterThan(initialBalance)
+    })
+    it("New user stakes" , async function () {
+      let initialTotalStaked = (await poolContract.pool()).totalStaked
+      await mockStakeToken.mint(alina.address, ethers.parseEther("10000"))
+      await mockStakeToken.connect(alina).approve(poolContract.target, ethers.parseEther("10000"))
+      await expect(poolContract.connect(alina).stake(ethers.parseEther("100"))).emit(poolContract, "Stake")
+      UnStake(alina, ethers.parseEther("100"), await poolContract.pool())
+      expect((await poolContract.pool()).totalStaked).to.be.greaterThan(initialTotalStaked)
+    });
+    
+    it("Attempt to unstake more than staked" , async function () {
+      await expect(poolContract.connect(alina).unstake(ethers.parseEther("10000"))).revertedWithCustomError(poolContract, "InsufficientAmount")
+      //await time.increase(5)
+    });
+    it("Should correctly calculate rewards and match pendingRewards()", async function () {
+  
+      // Calculate rewards outside the contract (emulating pendingRewards logic)
+      let ayoUser = userDetails[ayo.address]
+      const currentTimestamp = await time.latest();
+  
+      totalStaked
+      const pendingRewards = await poolContract.pendingRewards(ayo.address);
+      let accRewardPerShare = (await poolContract.pool()).accRewardPerShare;
+      
+      let stakingPool = await poolContract.pool()
+      if (currentTimestamp > stakingPool.lastRewardTimestamp && stakingPool.totalStaked !== BigInt(0)) {
+        const elapsedPeriod = BigInt(currentTimestamp) - stakingPool.lastRewardTimestamp;
+        const totalNewReward =  stakingPool.rewardTokenPerSecond * elapsedPeriod;
+        accRewardPerShare += (totalNewReward * PRECISION_FACTOR) / stakingPool.totalStaked;
+      }
+    
+  
+      const calculatedRewards = ((ayoUser.amount * accRewardPerShare) / PRECISION_FACTOR) - ayoUser.rewardDebt;
+  
+      // Update user's reward debt for subsequent calculations
+      ayoUser.rewardDebt = (ayoUser.amount * accRewardPerShare) / PRECISION_FACTOR;
+  
+      // Compare with the output of pendingRewards()
+      console.log("Calculated rewards: "+ calculatedRewards, "Pending Rewards: "+ pendingRewards)
+      expect(calculatedRewards).to.be.closeTo(pendingRewards, ethers.parseEther("0.1")); // Adjust if needed
+    });
+    it("Another New user stakes" , async function () {
+      let initialTotalStaked = (await poolContract.pool()).totalStaked
+      await mockStakeToken.mint(vartan.address, ethers.parseEther("10000"))
+      await mockStakeToken.connect(vartan).approve(poolContract.target, ethers.parseEther("10000"))
+      await expect(poolContract.connect(vartan).stake(ethers.parseEther("100"))).emit(poolContract, "Stake")
+      UnStake(vartan, ethers.parseEther("100"), await poolContract.pool())
+      expect((await poolContract.pool()).totalStaked).to.be.greaterThan(initialTotalStaked)
+    });
+    it("Claim: User 2 reward token amount should increase by amount claimed" , async function () {
+      await time.increase(5)
+      let initialBalance = await mockRewardToken.balanceOf(alina.address)
+      await expect(poolContract.connect(alina).claim()).emit(poolContract, "Claim");
+      let pool = await poolContract.pool()
+      let newBalance = await mockRewardToken.balanceOf(alina.address)
+      Claim(alina, newBalance, pool)
+      userDetails[alina.address].claimed += (newBalance - initialBalance);
+      expect(newBalance).to.be.greaterThan(initialBalance)
+    });
+    it("Rewards should stop increasing after end pool time" , async function () {
+      await time.increaseTo(poolEndTime + 1)
+      await expect(poolContract.connect(alina).claim()).emit(poolContract, "Claim");
+      await time.increase(100)
+      let pendingRewards = await poolContract.pendingRewards(alina.address);
+      expect(pendingRewards).to.be.equal(0)
+    });
+});
+})
+
+interface StakingPool {
+    stakeToken: string;
+    rewardToken: string;
+    startTime: bigint;
+    endTime: bigint;
+    unstakeLockupTime: bigint;
+    claimLockupTime: bigint;
+    rewardTokenPerSecond: bigint;
+    totalStaked: bigint;
+    totalClaimed: bigint;
+    lastRewardTimestamp: bigint;
+    accRewardPerShare: bigint;
+    isActive: boolean;
+    adminWallet: string;
+  }
+function logPool(stakingPool: StakingPool) {
   console.log({
     stakingPool: stakingPool.stakeToken,
     rewardToken: stakingPool.rewardToken,
@@ -314,4 +416,66 @@ function logPool(stakingPool: {
     isActive: stakingPool.isActive,
     adminWallet: stakingPool.adminWallet
   })
+}
+
+async function Stake(inputUser: HardhatEthersSigner, amount: bigint, pool: StakingPool) {
+  const user = userDetails[inputUser.address];
+  updateRewardPerShare(pool)
+  user.amount += amount;
+  totalStaked += amount;
+
+
+  const accRewardPerShare = await pool.accRewardPerShare;
+  user.rewardDebt = (user.amount * accRewardPerShare) / PRECISION_FACTOR;
+  rewardPerShare
+  rewardPerShare
+}
+
+async function UnStake(inputUser: HardhatEthersSigner, amount: bigint, pool: StakingPool) {
+  const user = userDetails[inputUser.address];
+  updateRewardPerShare(pool)
+  user.amount -= amount;
+  totalStaked -= amount;
+
+  // Update reward debt
+  rewardPerShare
+  const accRewardPerShare = await pool.accRewardPerShare;
+  user.rewardDebt = (user.amount * accRewardPerShare) / PRECISION_FACTOR;
+}
+
+async function Claim(inputUser: HardhatEthersSigner, amount: bigint, pool: StakingPool) {
+  const user = userDetails[inputUser.address];
+  
+  user.claimed += amount;
+  user.pending = ethers.parseEther("0");
+
+  // Update reward debt
+  const accRewardPerShare = pool.accRewardPerShare 
+  user.rewardDebt = (user.amount * accRewardPerShare) / PRECISION_FACTOR;
+}
+
+let rewardPerShare: bigint
+let lastUpdateTime: bigint
+let totalStaked: bigint
+async function updateRewardPerShare(pool:StakingPool){
+  let elapsedPeriod = _getMultiplier(lastUpdateTime, BigInt(await time.latest()), pool)
+  rewardPerShare +=
+                    (pool.rewardTokenPerSecond *
+                        PRECISION_FACTOR *
+                        elapsedPeriod) /
+                    pool.totalStaked;
+  pool.accRewardPerShare
+  pool.lastRewardTimestamp
+  lastUpdateTime = BigInt(await time.latest())
+  lastUpdateTime
+  }
+  
+  function _getMultiplier( _from:bigint, _to:bigint, pool: StakingPool): bigint{
+    if (_to <= pool.endTime) {
+        return _to - _from;
+    } else if (_from >= pool.endTime) {
+        return BigInt(0);
+    } else {
+        return pool.endTime - _from;
+    }
 }
