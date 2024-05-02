@@ -22,8 +22,7 @@ contract StakingFactory is Ownable {
         uint256 _rewardPerSecond,
         uint256 _poolStartTime,
         uint256 _poolEndTime,
-        uint256 _penaltyPeriod,
-        bool _isCollectFee
+        uint256 _penaltyPeriod
     ) public returns (address newPoolAddress) {
         newPoolAddress = address(
             new ERC20PenaltyFeePool{
@@ -43,17 +42,11 @@ contract StakingFactory is Ownable {
                 _poolStartTime,
                 _poolEndTime,
                 _penaltyPeriod,
-                _isCollectFee,
                 owner()
             )
         );
         stakingPools.push(newPoolAddress);
         ERC20PenaltyFeePool(newPoolAddress).transferOwnership(msg.sender);
-        IERC20(_rewardToken).safeTransferFrom(
-            msg.sender,
-            newPoolAddress,
-            (_poolEndTime - _poolStartTime) * _rewardPerSecond
-        );
         emit CreateStakingPool(newPoolAddress, _stakeToken, _rewardToken, _rewardPerSecond, _poolStartTime,_poolEndTime, msg.sender);
     }
 }

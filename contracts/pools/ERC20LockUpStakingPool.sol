@@ -195,9 +195,15 @@ contract ERC20LockUpStakingPool is ReentrancyGuard, Ownable {
             user.rewardDebt;
     }
 
+    function getUserInfo(
+        address _user
+    ) external view returns (User memory userInfo) {
+        userInfo = pool.userInfo[_user];
+    }
+
     function _updatePool() internal {
         if (block.timestamp > pool.lastRewardTimestamp) {
-            if (pool.totalStaked > 0) {
+            if (pool.totalStaked != 0) {
                 uint256 elapsedPeriod = _getMultiplier(
                     pool.lastRewardTimestamp,
                     block.timestamp
