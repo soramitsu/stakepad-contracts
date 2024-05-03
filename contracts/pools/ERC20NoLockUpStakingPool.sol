@@ -66,22 +66,22 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     );
 
     constructor(
-        address _stakeToken,
-        address _rewardToken,
-        uint256 _rewardTokenPerSecond,
-        uint256 _poolStartTime,
-        uint256 _poolEndTime,
-        address _adminAddress
+        address stakeToken,
+        address rewardToken,
+        uint256 rewardTokenPerSecond,
+        uint256 poolStartTime,
+        uint256 poolEndTime,
+        address adminAddress
     ) Ownable(msg.sender) {
-        if (_poolStartTime > _poolEndTime) revert InvalidStakingPeriod();
-        if (_poolStartTime < block.timestamp) revert InvalidStartTime();
-        pool.stakeToken = IERC20(_stakeToken);
-        pool.rewardToken = IERC20(_rewardToken);
-        pool.rewardTokenPerSecond = _rewardTokenPerSecond;
-        pool.lastRewardTimestamp = _poolStartTime;
-        pool.startTime = _poolStartTime;
-        pool.endTime = _poolEndTime;
-        pool.adminWallet = _adminAddress;
+        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
+        if (poolStartTime < block.timestamp) revert InvalidStartTime();
+        pool.stakeToken = IERC20(stakeToken);
+        pool.rewardToken = IERC20(rewardToken);
+        pool.rewardTokenPerSecond = rewardTokenPerSecond;
+        pool.lastRewardTimestamp = poolStartTime;
+        pool.startTime = poolStartTime;
+        pool.endTime = poolEndTime;
+        pool.adminWallet = adminAddress;
     }
 
     function stake(uint256 _amount) external validPool {
@@ -148,21 +148,22 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
 
     function activate() external onlyAdmin {
         if (pool.isActive) revert PoolIsActive();
+        pool.isActive = true;
         uint256 rewardAmaount = (pool.endTime - pool.startTime) *
             pool.rewardTokenPerSecond;
+        // slither-disable-next-line arbitrary-send-erc20
         pool.rewardToken.safeTransferFrom(
             owner(),
             address(this),
             rewardAmaount
         );
-        pool.isActive = true;
         emit ActivatePool(rewardAmaount);
     }
 
     function pendingRewards(
-        address _userAddress
+        address userAddress
     ) external view returns (uint256) {
-        User storage user = pool.userInfo[_userAddress];
+        User storage user = pool.userInfo[userAddress];
         uint256 share = pool.accRewardPerShare;
         if (
             block.timestamp > pool.lastRewardTimestamp && pool.totalStaked != 0
@@ -183,9 +184,9 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     }
 
     function getUserInfo(
-        address _user
+        address user
     ) external view returns (User memory userInfo) {
-        userInfo = pool.userInfo[_user];
+        userInfo = pool.userInfo[user];
     }
 
     function _updatePool() internal {

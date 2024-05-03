@@ -17,34 +17,34 @@ contract ERC20NoLockUpStakingFactory is Ownable {
     constructor() Ownable(msg.sender) {}
 
     function deploy(
-        address _stakeToken,
-        address _rewardToken,
-        uint256 _rewardPerSecond,
-        uint256 _poolStartTime,
-        uint256 _poolEndTime
+        address stakeToken,
+        address rewardToken,
+        uint256 rewardPerSecond,
+        uint256 poolStartTime,
+        uint256 poolEndTime
     ) public returns (address newPoolAddress) {
         newPoolAddress = address(
             new ERC20NoLockUpStakingPool{
                 salt: keccak256(
                     abi.encodePacked(
-                        _stakeToken,
-                        _rewardToken,
-                        _rewardPerSecond,
-                        _poolStartTime,
-                        _poolEndTime
+                        stakeToken,
+                        rewardToken,
+                        rewardPerSecond,
+                        poolStartTime,
+                        poolEndTime
                     )
                 )
             }(
-                _stakeToken,
-                _rewardToken,
-                _rewardPerSecond,
-                _poolStartTime,
-                _poolEndTime,
+                stakeToken,
+                rewardToken,
+                rewardPerSecond,
+                poolStartTime,
+                poolEndTime,
                 owner()
             )
         );
         stakingPools.push(newPoolAddress);
         ERC20NoLockUpStakingFactory(newPoolAddress).transferOwnership(msg.sender);
-        emit CreateStakingPool(newPoolAddress, _stakeToken, _rewardToken, _rewardPerSecond, _poolStartTime, _poolEndTime, msg.sender);
+        emit CreateStakingPool(newPoolAddress, stakeToken, rewardToken, rewardPerSecond, poolStartTime, poolEndTime, msg.sender);
     }
 }
