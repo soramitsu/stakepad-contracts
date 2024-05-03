@@ -240,11 +240,11 @@ describe("Contract Deployment", async function () {
       expect((await poolContract.pool()).isActive).to.equal(true);
     });
 
-    it("Stake fail: (InsufficientAmount)", async function () {
+    it("Stake fail: (InvalidAmount)", async function () {
       let amount = ethers.parseEther("0");
       await expect(poolContract.stake(amount)).revertedWithCustomError(
         poolContract,
-        "InsufficientAmount"
+        "InvalidAmount"
       );
     });
 
@@ -268,7 +268,7 @@ describe("Contract Deployment", async function () {
       await expect(poolContract.connect(ayo).stake(amount)).emit(
         poolContract,
         "Stake"
-      );
+      ).withArgs(ayo.address, amount);
       Stake(ayo, amount, await poolContract.pool())
       await time.increase(5);
     });
@@ -284,7 +284,7 @@ describe("Contract Deployment", async function () {
       let amount = ethers.parseEther("50");
       await expect(
         poolContract.connect(ayo).unstake(amount)
-      ).emit(poolContract, "Unstake");
+      ).emit(poolContract, "Unstake").withArgs(ayo.address, amount);
       UnStake(ayo, amount, await poolContract.pool())
     });
 
@@ -317,6 +317,7 @@ describe("Contract Deployment", async function () {
       userDetails[ayo.address].claimed += (newBalance - initialBalance);
       expect(newBalance).to.be.greaterThan(initialBalance)
     })
+
     it("New user stakes" , async function () {
       let initialTotalStaked = (await poolContract.pool()).totalStaked
       await mockStakeToken.mint(alina.address, ethers.parseEther("10000"))

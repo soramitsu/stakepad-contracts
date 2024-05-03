@@ -15,8 +15,11 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     error InvalidStakingPeriod();
     error InvalidStartTime();
     error InvalidLockupTime();
+    error InvalidAmount();
+    error NothingToClaim();
     error InsufficientAmount(uint256 amount);
     error PoolNotStarted();
+    error PoolHasEnded();
     error PoolNotActive();
     error PoolIsActive();
     error NotAdmin();
@@ -85,7 +88,7 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     }
 
     function stake(uint256 _amount) external validPool {
-        if (_amount == 0) revert InsufficientAmount(_amount);
+        if (_amount == 0) revert InvalidAmount();
         _updatePool();
         User storage user = pool.userInfo[msg.sender];
         uint256 share = pool.accRewardPerShare;
@@ -106,6 +109,7 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
     }
 
     function unstake(uint256 _amount) external nonReentrant {
+        if (_amount == 0) revert InvalidAmount();
         User storage user = pool.userInfo[msg.sender];
         uint256 amount = user.amount;
         if (amount < _amount) revert InsufficientAmount(amount);
@@ -135,29 +139,42 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable {
                 (amount * pool.accRewardPerShare) /
                 PRECISION_FACTOR;
         }
-        if (pending > 0) {
-            user.pending = 0;
-            unchecked {
-                user.claimed += pending;
-            }
-            pool.totalClaimed += pending;
-            pool.rewardToken.safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending);
+        if (pending == 0) revert NothingToClaim();
+        // Transfer pending rewards to the user
+        user.pending = 0;
+        unchecked {
+            user.claimed += pending;
         }
+        pool.totalClaimed += pending;
+        pool.rewardToken.safeTransfer(msg.sender, pending);
+        emit Claim(msg.sender, pending);
     }
 
+    /// @notice Function to activate the staking pool
+    /// @dev Protected by onlyAdmin modifier. Only platform admin can activate pools
     function activate() external onlyAdmin {
+        // Check if the pool is already active
         if (pool.isActive) revert PoolIsActive();
+
+        // Check if the current timestamp is after the end time of the pool
+        if (block.timestamp >= pool.endTime) revert PoolHasEnded();
+
+        // Activate the pool
         pool.isActive = true;
-        uint256 rewardAmaount = (pool.endTime - pool.startTime) *
+
+        // Calculate the reward amount to fund the pool
+        uint256 timestampToFund = block.timestamp > pool.startTime
+            ? block.timestamp
+            : pool.startTime;
+        uint256 rewardAmount = (pool.endTime - timestampToFund) *
             pool.rewardTokenPerSecond;
+
+        // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
-        pool.rewardToken.safeTransferFrom(
-            owner(),
-            address(this),
-            rewardAmaount
-        );
-        emit ActivatePool(rewardAmaount);
+        pool.rewardToken.safeTransferFrom(owner(), address(this), rewardAmount);
+
+        // Emit activation event
+        emit ActivatePool(rewardAmount);
     }
 
     function pendingRewards(

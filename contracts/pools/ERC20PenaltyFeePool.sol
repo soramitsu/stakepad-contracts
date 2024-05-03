@@ -21,6 +21,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     error InsufficientAmount(uint256 amount);
     error PoolNotStarted();
+    error PoolHasEnded();
     error PoolNotActive();
     error PoolIsActive();
     error NotAdmin();
@@ -173,13 +174,30 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable {
         }
     }
 
+    /// @notice Function to activate the staking pool
+    /// @dev Protected by onlyAdmin modifier. Only platform admin can activate pools
     function activate() external onlyAdmin {
+        // Check if the pool is already active
         if (pool.isActive) revert PoolIsActive();
+
+        // Check if the current timestamp is after the end time of the pool
+        if (block.timestamp >= pool.endTime) revert PoolHasEnded();
+
+        // Activate the pool
         pool.isActive = true;
-        uint256 rewardAmount = (pool.endTime - pool.startTime) *
+
+        // Calculate the reward amount to fund the pool
+        uint256 timestampToFund = block.timestamp > pool.startTime
+            ? block.timestamp
+            : pool.startTime;
+        uint256 rewardAmount = (pool.endTime - timestampToFund) *
             pool.rewardTokenPerSecond;
+
+        // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         pool.rewardToken.safeTransferFrom(owner(), address(this), rewardAmount);
+
+        // Emit activation event
         emit ActivatePool(rewardAmount);
     }
 
