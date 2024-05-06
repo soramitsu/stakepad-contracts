@@ -15,6 +15,8 @@ contract ERC721LockUpStakingPool is ReentrancyGuard, Ownable {
     error NotStaker();
     error UserNotFound();
     error NothingToClaim();
+    error PoolNotStarted();
+    error PoolNotActive();
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
 
 
@@ -27,6 +29,13 @@ contract ERC721LockUpStakingPool is ReentrancyGuard, Ownable {
         uint256 accumulatedRewardTokenPerShare,
         uint256 lastBlockNumber
     );
+
+    /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
+    modifier validPool() {
+        if (block.timestamp < pool.startTime) revert PoolNotStarted();
+        if (!pool.isActive) revert PoolNotActive();
+        _;
+    }
     struct Pool {
         IERC721 stakeToken;
         IERC20 rewardToken;
@@ -71,7 +80,7 @@ contract ERC721LockUpStakingPool is ReentrancyGuard, Ownable {
         pool.lastUpdateTimestamp = block.timestamp;
     }
 
-    function stake(uint256[] calldata _tokenIds) external {
+    function stake(uint256[] calldata _tokenIds) external validPool {
         //update parameters
         _updatePool();
 
@@ -100,13 +109,11 @@ contract ERC721LockUpStakingPool is ReentrancyGuard, Ownable {
             if(pool.stakedTokens[_tokenIds[i]] != msg.sender){
                 revert NotStaker();
             }
-            if(pool.stakedTokens[_tokenIds[i]] == msg.sender){
-                revert UserNotFound();
-            }
             pool.stakeToken.safeTransferFrom(address(this), msg.sender, _tokenIds[i]);
             pool.stakedTokens[_tokenIds[1]] = address(0);
         }
         pool.userInfo[msg.sender].amount -= _amount;
+        pool.totalStaked -= _amount;
         emit UnStaked(msg.sender, _tokenIds);
     }
 
