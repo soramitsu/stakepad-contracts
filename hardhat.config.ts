@@ -1,5 +1,8 @@
+import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+
+dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -16,12 +19,24 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-      // TODO
-      // mumbai: {
-      //   url: 'https://rpc-mumbai.maticvigil.com/',
-      //   accounts: { mnemonic, initialIndex: 0 },
-      //   chainId: 80001,
-      // },
+    amoy: {
+      url: 'https://rpc-amoy.polygon.technology/',
+      accounts: [process.env.PRIVATE_KEY as string],
+      chainId: 80002,
+    },
+  },
+  etherscan: {
+    apiKey: { amoy: process.env.AMOY_API_KEY as string },
+    customChains: [
+      {
+        network: "amoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com"
+        },
+      }
+    ]
   },
   gasReporter: {
     enabled: true,
