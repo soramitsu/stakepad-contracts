@@ -4,7 +4,7 @@ import {IERC20BasePool} from "./IERC20BasePool.sol";
 
 interface IERC20PenaltyPoolExtension is IERC20BasePool {
     struct PenaltyPool {
-        BasePoolInfo baseParams;
+        BasePoolInfo baseInfo;
         uint256 penaltyPeriod;
         uint256 totalPenalties;
     }

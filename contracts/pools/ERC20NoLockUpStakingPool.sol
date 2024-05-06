@@ -139,10 +139,7 @@ contract ERC20NoLockUpStakingPool is
         // Activate the pool
         pool.isActive = true;
         // Calculate the reward amount to fund the pool
-        uint256 timestampToFund = block.timestamp > pool.startTime
-            ? block.timestamp
-            : pool.startTime;
-        uint256 rewardAmount = (pool.endTime - timestampToFund) *
+        uint256 rewardAmount = (pool.endTime - pool.startTime) *
             pool.rewardTokenPerSecond;
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20

@@ -25,12 +25,12 @@ contract ERC20PenaltyFeePool is
     mapping(address => PenaltyUser) public userInfo;
 
     modifier onlyAdmin() {
-        if (msg.sender != pool.baseParams.adminWallet) revert NotAdmin();
+        if (msg.sender != pool.baseInfo.adminWallet) revert NotAdmin();
         _;
     }
     modifier validPool() {
-        if (block.timestamp < pool.baseParams.startTime) revert PoolNotStarted();
-        if (!pool.baseParams.isActive) revert PoolNotActive();
+        if (block.timestamp < pool.baseInfo.startTime) revert PoolNotStarted();
+        if (!pool.baseInfo.isActive) revert PoolNotActive();
         _;
     }
 
@@ -47,13 +47,13 @@ contract ERC20PenaltyFeePool is
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         if (poolEndTime - poolStartTime > penaltyPeriod)
             revert InvalidPenaltyPeriod();
-        pool.baseParams.stakeToken = stakeToken;
-        pool.baseParams.rewardToken = rewardToken;
-        pool.baseParams.rewardTokenPerSecond = rewardTokenPerSecond;
-        pool.baseParams.lastRewardTimestamp = poolStartTime;
-        pool.baseParams.startTime = poolStartTime;
-        pool.baseParams.endTime = poolEndTime;
-        pool.baseParams.adminWallet = adminAddress;
+        pool.baseInfo.stakeToken = stakeToken;
+        pool.baseInfo.rewardToken = rewardToken;
+        pool.baseInfo.rewardTokenPerSecond = rewardTokenPerSecond;
+        pool.baseInfo.lastRewardTimestamp = poolStartTime;
+        pool.baseInfo.startTime = poolStartTime;
+        pool.baseInfo.endTime = poolEndTime;
+        pool.baseInfo.adminWallet = adminAddress;
         pool.penaltyPeriod = penaltyPeriod;
         
     }
@@ -65,7 +65,7 @@ contract ERC20PenaltyFeePool is
         if (amount == 0) revert InvalidAmount();
         _updatePool();
         PenaltyUser storage user = userInfo[msg.sender];
-        uint256 share = pool.baseParams.accRewardPerShare;
+        uint256 share = pool.baseInfo.accRewardPerShare;
         uint256 currentAmount = user.baseInfo.amount;
         if (currentAmount > 0) {
             user.baseInfo.pending +=
@@ -77,12 +77,12 @@ contract ERC20PenaltyFeePool is
             user.baseInfo.amount = currentAmount + amount;
         }
         user.penaltyEndTime = block.timestamp + pool.penaltyPeriod >
-            pool.baseParams.endTime
-            ? pool.baseParams.endTime
+            pool.baseInfo.endTime
+            ? pool.baseInfo.endTime
             : block.timestamp + pool.penaltyPeriod;
         user.baseInfo.rewardDebt = (user.baseInfo.amount * share) / PRECISION_FACTOR;
-        pool.baseParams.totalStaked += amount;
-        IERC20(pool.baseParams.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
+        pool.baseInfo.totalStaked += amount;
+        IERC20(pool.baseInfo.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
         emit Stake(msg.sender, amount);
     }
 
@@ -95,15 +95,15 @@ contract ERC20PenaltyFeePool is
         uint256 currentAmount = user.baseInfo.amount;
         if (currentAmount < amount) revert InsufficientAmount(currentAmount, amount);
         _updatePool();
-        uint256 share = pool.baseParams.accRewardPerShare;
+        uint256 share = pool.baseInfo.accRewardPerShare;
         if (block.timestamp <= user.penaltyEndTime) user.penalized = true;
         user.baseInfo.pending += ((currentAmount * share) / PRECISION_FACTOR) - user.baseInfo.rewardDebt;
         unchecked {
             user.baseInfo.amount -= amount;
         }
         user.baseInfo.rewardDebt = (user.baseInfo.amount * share) / PRECISION_FACTOR;
-        pool.baseParams.totalStaked -= amount;
-        IERC20(pool.baseParams.stakeToken).safeTransfer(msg.sender, amount);
+        pool.baseInfo.totalStaked -= amount;
+        IERC20(pool.baseInfo.stakeToken).safeTransfer(msg.sender, amount);
         emit Unstake(msg.sender, amount);
     }
 
@@ -119,11 +119,11 @@ contract ERC20PenaltyFeePool is
         uint256 pending = user.baseInfo.pending;
         if (amount > 0) {
             pending +=
-                (amount * pool.baseParams.accRewardPerShare) /
+                (amount * pool.baseInfo.accRewardPerShare) /
                 PRECISION_FACTOR -
                 user.baseInfo.rewardDebt;
             user.baseInfo.rewardDebt =
-                (amount * pool.baseParams.accRewardPerShare) /
+                (amount * pool.baseInfo.accRewardPerShare) /
                 PRECISION_FACTOR;
         }
         if (pending == 0) revert NothingToClaim();
@@ -137,9 +137,9 @@ contract ERC20PenaltyFeePool is
         unchecked {
             user.baseInfo.claimed += pending;
         }
-        pool.baseParams.totalClaimed += pending;
+        pool.baseInfo.totalClaimed += pending;
         pool.totalPenalties += penalityAmount;
-        IERC20(pool.baseParams.rewardToken).safeTransfer(msg.sender, pending);
+        IERC20(pool.baseInfo.rewardToken).safeTransfer(msg.sender, pending);
         emit Claim(msg.sender, pending);
     }
 
@@ -148,20 +148,17 @@ contract ERC20PenaltyFeePool is
      */
     function activate() external onlyAdmin {
         // Check if the pool is already active
-        if (pool.baseParams.isActive) revert PoolIsActive();
+        if (pool.baseInfo.isActive) revert PoolIsActive();
         // Check if the current timestamp is after the end time of the pool
-        if (block.timestamp >= pool.baseParams.endTime) revert PoolHasEnded();
+        if (block.timestamp >= pool.baseInfo.endTime) revert PoolHasEnded();
         // Activate the pool
-        pool.baseParams.isActive = true;
+        pool.baseInfo.isActive = true;
         // Calculate the reward amount to fund the pool
-        uint256 timestampToFund = block.timestamp > pool.baseParams.startTime
-            ? block.timestamp
-            : pool.baseParams.startTime;
-        uint256 rewardAmount = (pool.baseParams.endTime - timestampToFund) *
-            pool.baseParams.rewardTokenPerSecond;
+        uint256 rewardAmount = (pool.baseInfo.endTime - pool.baseInfo.startTime) *
+            pool.baseInfo.rewardTokenPerSecond;
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(pool.baseParams.rewardToken).safeTransferFrom(owner(), address(this), rewardAmount);
+        IERC20(pool.baseInfo.rewardToken).safeTransferFrom(owner(), address(this), rewardAmount);
         // Emit activation event
         emit ActivatePool(rewardAmount);
     }
@@ -171,41 +168,41 @@ contract ERC20PenaltyFeePool is
      */
     function pendingRewards(address userAddress) public view returns (uint256) {
         PenaltyUser storage user = userInfo[userAddress];
-        uint256 share = pool.baseParams.accRewardPerShare;
+        uint256 share = pool.baseInfo.accRewardPerShare;
         uint256 pending = user.baseInfo.pending;
         if (
-            block.timestamp > pool.baseParams.lastRewardTimestamp && pool.baseParams.totalStaked > 0
+            block.timestamp > pool.baseInfo.lastRewardTimestamp && pool.baseInfo.totalStaked > 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
                 block.timestamp,
-                pool.baseParams.lastRewardTimestamp
+                pool.baseInfo.lastRewardTimestamp
             );
-            uint256 totalNewReward = pool.baseParams.rewardTokenPerSecond * elapsedPeriod;
+            uint256 totalNewReward = pool.baseInfo.rewardTokenPerSecond * elapsedPeriod;
             share =
                 share +
-                ((totalNewReward * PRECISION_FACTOR) / pool.baseParams.totalStaked);
+                ((totalNewReward * PRECISION_FACTOR) / pool.baseInfo.totalStaked);
         }
         pending += ((user.baseInfo.amount * share) / PRECISION_FACTOR) - user.baseInfo.rewardDebt;
         return pending - _calculatePenalizedAmount(user.penalized, pending);
     }
 
     function _updatePool() internal {
-        if (block.timestamp > pool.baseParams.lastRewardTimestamp) {
-            if (pool.baseParams.totalStaked != 0) {
+        if (block.timestamp > pool.baseInfo.lastRewardTimestamp) {
+            if (pool.baseInfo.totalStaked != 0) {
                 uint256 elapsedPeriod = _getMultiplier(
                     block.timestamp,
-                    pool.baseParams.lastRewardTimestamp
+                    pool.baseInfo.lastRewardTimestamp
                 );
-                pool.baseParams.accRewardPerShare +=
-                    (pool.baseParams.rewardTokenPerSecond *
+                pool.baseInfo.accRewardPerShare +=
+                    (pool.baseInfo.rewardTokenPerSecond *
                         PRECISION_FACTOR *
                         elapsedPeriod) /
-                    pool.baseParams.totalStaked;
+                    pool.baseInfo.totalStaked;
             }
-            pool.baseParams.lastRewardTimestamp = block.timestamp;
+            pool.baseInfo.lastRewardTimestamp = block.timestamp;
             emit UpdatePool(
-                pool.baseParams.totalStaked,
-                pool.baseParams.accRewardPerShare,
+                pool.baseInfo.totalStaked,
+                pool.baseInfo.accRewardPerShare,
                 block.timestamp
             );
         }
@@ -233,12 +230,12 @@ contract ERC20PenaltyFeePool is
         uint256 _from,
         uint256 _to
     ) internal view returns (uint256) {
-        if (_to <= pool.baseParams.endTime) {
+        if (_to <= pool.baseInfo.endTime) {
             return _to - _from;
-        } else if (_from >= pool.baseParams.endTime) {
+        } else if (_from >= pool.baseInfo.endTime) {
             return 0;
         } else {
-            return pool.baseParams.endTime - _from;
+            return pool.baseInfo.endTime - _from;
         }
     }
 }
