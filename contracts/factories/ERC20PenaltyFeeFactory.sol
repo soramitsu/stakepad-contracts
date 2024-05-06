@@ -49,4 +49,8 @@ contract ERC20PenaltyFeeStakingFactory is Ownable {
         ERC20PenaltyFeePool(newPoolAddress).transferOwnership(msg.sender);
         emit CreateStakingPool(newPoolAddress, stakeToken, rewardToken, rewardPerSecond, poolStartTime, poolEndTime, msg.sender);
     }
+
+    function getPools() external view returns (address[] memory) {
+        return stakingPools;
+    }
 }

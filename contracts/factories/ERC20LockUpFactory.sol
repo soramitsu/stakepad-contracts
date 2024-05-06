@@ -51,4 +51,8 @@ contract ERC20LockUpStakingFactory is Ownable {
         ERC20LockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
         emit CreateStakingPool(newPoolAddress, stakeToken, rewardToken, rewardPerSecond, poolStartTime, poolEndTime, msg.sender);
     }
+
+    function getPools() external view returns (address[] memory) {
+        return stakingPools;
+    }
 }
