@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 // Import OpenZeppelin contracts for ERC20 token interaction, reentrancy protection, safe token transfers, and ownership management.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20LockUpPoolExtension} from "../interfaces/IERC20LockUpPoolExtension.sol";
+import {IERC20LockUpPoolExtension} from "../interfaces/IERC20Pools/IERC20LockUpPoolExtension.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -34,7 +34,6 @@ contract ERC20LockUpStakingPool is
     /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
     modifier validPool() {
         if (block.timestamp < pool.baseInfo.startTime) revert PoolNotStarted();
-        if (!pool.baseInfo.isActive) revert PoolNotActive();
         _;
     }
 
@@ -181,36 +180,7 @@ contract ERC20LockUpStakingPool is
         IERC20(pool.baseInfo.rewardToken).safeTransfer(msg.sender, pending);
         emit Claim(msg.sender, pending);
     }
-
-    /**
-     * @dev See {IERC20BasePool-activate}.
-     */
-    function activate() external onlyAdmin {
-        // Check if the pool is already active
-        if (pool.baseInfo.isActive) revert PoolIsActive();
-        // Check if the current timestamp is after the end time of the pool
-        if (block.timestamp >= pool.baseInfo.endTime) revert PoolHasEnded();
-        // Activate the pool
-        pool.baseInfo.isActive = true;
-        uint256 timestampToFund = pool.baseInfo.startTime;
-        if (block.timestamp > timestampToFund) {
-            timestampToFund = block.timestamp;
-            pool.baseInfo.lastRewardTimestamp = timestampToFund;
-        }
-        // Calculate the reward amount to fund the pool
-        uint256 rewardAmount = (pool.baseInfo.endTime - timestampToFund) *
-            pool.baseInfo.rewardTokenPerSecond;
-        // Transfer reward tokens from the owner to the contract
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(pool.baseInfo.rewardToken).safeTransferFrom(
-            owner(),
-            address(this),
-            rewardAmount
-        );
-        // Emit activation event
-        emit ActivatePool(rewardAmount);
-    }
-
+    
     /**
      * @dev See {IERC20BasePool-pendingRewards}.
      */

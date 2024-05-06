@@ -19,7 +19,6 @@ interface IERC20BasePool {
         uint256 totalClaimed; // Total amount of claimed rewards
         uint256 lastRewardTimestamp; // Timestamp of the last reward update
         uint256 accRewardPerShare; // Accumulated rewards per share
-        bool isActive; // Flag indicating if the pool is active
         address adminWallet; // Address of the admin
     }
 
@@ -46,15 +45,6 @@ interface IERC20BasePool {
 
     /// @dev Error to indicate that the staking pool has not started yet
     error PoolNotStarted();
-
-    /// @dev Error to indicate that the staking pool has already ended
-    error PoolHasEnded();
-
-    /// @dev Error to indicate that the staking pool is not active
-    error PoolNotActive();
-
-    /// @dev Error to indicate that the staking pool is already active
-    error PoolIsActive();
 
     /// @dev Error to indicate that the caller is not the admin
     error NotAdmin();
@@ -86,13 +76,6 @@ interface IERC20BasePool {
      * @param amount The amount of rewards claimed
      */
     event Claim(address user, uint256 amount);
-
-    /**
-     * @notice Event to notify when the staking pool is activated by the admin team
-     * @dev Emmited in 'activate' function
-     * @param rewardAmount The amount of rewards allocated to the pool
-     */
-    event ActivatePool(uint256 rewardAmount);
 
     /**
      * @notice Event to notify when the staking pool is updated
@@ -136,10 +119,4 @@ interface IERC20BasePool {
     function pendingRewards(
         address userAddress
     ) external view returns (uint256);
-
-    /**
-     * @notice Function to activate the staking pool
-     * @dev Protected by onlyAdmin modifier. Only platform admin can activate pools
-     */
-    function activate() external;
 }
