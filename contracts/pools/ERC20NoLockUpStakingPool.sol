@@ -8,11 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20NoLockUpStakingPool is
-    ReentrancyGuard,
-    Ownable,
-    IERC20BasePool
-{
+contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
 
@@ -76,7 +72,11 @@ contract ERC20NoLockUpStakingPool is
         }
         user.rewardDebt = (user.amount * share) / PRECISION_FACTOR;
         pool.totalStaked += amount;
-        IERC20(pool.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(pool.stakeToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
         emit Stake(msg.sender, amount);
     }
 
@@ -87,10 +87,13 @@ contract ERC20NoLockUpStakingPool is
         if (amount == 0) revert InvalidAmount();
         BaseUserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
-        if (currentAmount < amount) revert InsufficientAmount(currentAmount, amount);
+        if (currentAmount < amount)
+            revert InsufficientAmount(currentAmount, amount);
         _updatePool();
         uint256 share = pool.accRewardPerShare;
-        user.pending += ((currentAmount * share) / PRECISION_FACTOR) - user.rewardDebt;
+        user.pending +=
+            ((currentAmount * share) / PRECISION_FACTOR) -
+            user.rewardDebt;
         unchecked {
             user.amount -= amount;
         }
@@ -139,7 +142,7 @@ contract ERC20NoLockUpStakingPool is
         // Activate the pool
         pool.isActive = true;
         uint256 timestampToFund = pool.startTime;
-        if (block.timestamp > timestampToFund){
+        if (block.timestamp > timestampToFund) {
             timestampToFund = block.timestamp;
             pool.lastRewardTimestamp = timestampToFund;
         }
@@ -148,7 +151,11 @@ contract ERC20NoLockUpStakingPool is
             pool.rewardTokenPerSecond;
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(pool.rewardToken).safeTransferFrom(owner(), address(this), rewardAmount);
+        IERC20(pool.rewardToken).safeTransferFrom(
+            owner(),
+            address(this),
+            rewardAmount
+        );
         // Emit activation event
         emit ActivatePool(rewardAmount);
     }

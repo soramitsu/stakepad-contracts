@@ -99,12 +99,12 @@ interface IERC20BasePool {
      * @dev Emmited in '_updatePool' function
      * @param totalStaked The total amount of tokens staked in the pool
      * @param accumulatedRewardTokenPerShare The accumulated rewards per share
-     * @param lastBlockNumber The timestamp of the last block with any user operation
+     * @param lastBlockTimestamp The timestamp of the last block with any user operation
      */
     event UpdatePool(
         uint256 totalStaked,
         uint256 accumulatedRewardTokenPerShare,
-        uint256 lastBlockNumber
+        uint256 lastBlockTimestamp
     );
 
     /**

@@ -75,7 +75,6 @@ contract ERC20LockUpStakingPool is
         pool.baseInfo.adminWallet = adminAddress;
         pool.unstakeLockupTime = unstakeLockup;
         pool.claimLockupTime = claimLockup;
-        
     }
 
     /**
@@ -105,7 +104,11 @@ contract ERC20LockUpStakingPool is
         // Update total staked amount
         pool.baseInfo.totalStaked += amount;
         // Transfer tokens from user to contract
-        IERC20(pool.baseInfo.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(pool.baseInfo.stakeToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
         // Emit stake event
         emit Stake(msg.sender, amount);
     }
@@ -122,13 +125,16 @@ contract ERC20LockUpStakingPool is
         BaseUserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
         // Ensure the user has enough staked tokens
-        if (currentAmount < amount) revert InsufficientAmount(currentAmount, amount);
+        if (currentAmount < amount)
+            revert InsufficientAmount(currentAmount, amount);
         // Update the pool
         _updatePool();
         // Get accumulated rewards per share
         uint256 share = pool.baseInfo.accRewardPerShare;
         // Calculate pending rewards
-        user.pending += ((currentAmount * share) / PRECISION_FACTOR) - user.rewardDebt;
+        user.pending +=
+            ((currentAmount * share) / PRECISION_FACTOR) -
+            user.rewardDebt;
         // Update user data
         unchecked {
             user.amount -= amount;
@@ -187,7 +193,7 @@ contract ERC20LockUpStakingPool is
         // Activate the pool
         pool.baseInfo.isActive = true;
         uint256 timestampToFund = pool.baseInfo.startTime;
-        if (block.timestamp > timestampToFund){
+        if (block.timestamp > timestampToFund) {
             timestampToFund = block.timestamp;
             pool.baseInfo.lastRewardTimestamp = timestampToFund;
         }
@@ -196,7 +202,11 @@ contract ERC20LockUpStakingPool is
             pool.baseInfo.rewardTokenPerSecond;
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(pool.baseInfo.rewardToken).safeTransferFrom(owner(), address(this), rewardAmount);
+        IERC20(pool.baseInfo.rewardToken).safeTransferFrom(
+            owner(),
+            address(this),
+            rewardAmount
+        );
         // Emit activation event
         emit ActivatePool(rewardAmount);
     }
@@ -212,14 +222,18 @@ contract ERC20LockUpStakingPool is
         uint256 share = pool.baseInfo.accRewardPerShare;
         // Update accumulated rewards per share if necessary
         if (
-            block.timestamp > pool.baseInfo.lastRewardTimestamp && pool.baseInfo.totalStaked != 0
+            block.timestamp > pool.baseInfo.lastRewardTimestamp &&
+            pool.baseInfo.totalStaked != 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
                 pool.baseInfo.lastRewardTimestamp,
                 block.timestamp
             );
-            uint256 totalNewReward = pool.baseInfo.rewardTokenPerSecond * elapsedPeriod;
-            share += (totalNewReward * PRECISION_FACTOR) / pool.baseInfo.totalStaked;
+            uint256 totalNewReward = pool.baseInfo.rewardTokenPerSecond *
+                elapsedPeriod;
+            share +=
+                (totalNewReward * PRECISION_FACTOR) /
+                pool.baseInfo.totalStaked;
         }
         // Calculate pending rewards
         return

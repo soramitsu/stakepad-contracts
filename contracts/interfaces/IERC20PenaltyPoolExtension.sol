@@ -24,4 +24,15 @@ interface IERC20PenaltyPoolExtension is IERC20BasePool {
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
     /// @dev Error to indicate an invalid penalty duration for unstaking
     error InvalidPenaltyPeriod();
+
+    /**
+     *  EVENTS
+     */
+    
+    /**
+     * @notice Event to notify when an admin claims accumulated fees
+     * @dev Emmited in 'claim' function
+     * @param amount The amount of fees claimed
+     */
+    event FeeClaim(uint256 amount);
 }

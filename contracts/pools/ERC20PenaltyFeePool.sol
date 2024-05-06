@@ -168,6 +168,13 @@ contract ERC20PenaltyFeePool is
         emit ActivatePool(rewardAmount);
     }
 
+    function claimFee() external nonReentrant onlyAdmin {
+        uint256 penaltyAmount = pool.totalPenalties;
+        if (penaltyAmount == 0) revert NothingToClaim();
+        IERC20(pool.baseInfo.rewardToken).safeTransfer(pool.baseInfo.adminWallet, penaltyAmount);
+        emit FeeClaim(penaltyAmount);
+    }
+
     /**
      * @dev See {IERC20BasePool-pendingRewards}.
      */
