@@ -97,7 +97,7 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
         emit RequestStatusChanged(id, req.requestStatus);
     }
 
-    function cancelRequest(uint256 id) external onlyOwner {
+    function cancelRequest(uint256 id) external {
         if (requests.length < id) revert InvalidId();
         Request storage req = requests[id];
         if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
@@ -110,7 +110,7 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
         reqs = requests;
     }
 
-    function getPools() external view returns (address[] memory) {
-        return stakingPools;
+    function getPools() external view returns (address[] memory pools) {
+        pools = stakingPools;
     }
 }
