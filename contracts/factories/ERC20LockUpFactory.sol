@@ -51,9 +51,10 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
             )
         );
         stakingPools.push(newPoolAddress);
-        ERC20LockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
+        requests[id].requestStatus = Status.DEPLOYED;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
+        ERC20LockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(req.data.rewardToken).safeTransferFrom(
@@ -61,7 +62,6 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
             newPoolAddress,
             rewardAmount
         );
-        requests[id].requestStatus = Status.DEPLOYED;
         emit CreateStakingPool(
             newPoolAddress,
             req.data.stakeToken,
