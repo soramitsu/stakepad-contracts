@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20PenaltyPoolExtension} from "../interfaces/IERC20Pools/IERC20PenaltyPoolExtension.sol";
+import {IPenaltyPoolERC20} from "../interfaces/IERC20Pools/IERC20PenaltyPoolExtension.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,7 +12,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20PenaltyFeePool is
     ReentrancyGuard,
     Ownable,
-    IERC20PenaltyPoolExtension
+    IPenaltyPoolERC20
 {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
@@ -22,14 +22,14 @@ contract ERC20PenaltyFeePool is
     ///@dev Public pool variable to access pool data
     PenaltyPool public pool;
     ///@dev Mapping to store user-specific staking information
-    mapping(address => PenaltyUser) public userInfo;
+    mapping(address => UserInfo) public userInfo;
 
     modifier onlyAdmin() {
-        if (msg.sender != pool.baseInfo.adminWallet) revert NotAdmin();
+        if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
     }
     modifier validPool() {
-        if (block.timestamp < pool.baseInfo.startTime) revert PoolNotStarted();
+        if (block.timestamp < pool.startTime) revert PoolNotStarted();
         _;
     }
 
@@ -46,87 +46,87 @@ contract ERC20PenaltyFeePool is
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         if (poolEndTime - poolStartTime > penaltyPeriod)
             revert InvalidPenaltyPeriod();
-        pool.baseInfo.stakeToken = stakeToken;
-        pool.baseInfo.rewardToken = rewardToken;
-        pool.baseInfo.rewardTokenPerSecond = rewardTokenPerSecond;
-        pool.baseInfo.lastRewardTimestamp = poolStartTime;
-        pool.baseInfo.startTime = poolStartTime;
-        pool.baseInfo.endTime = poolEndTime;
-        pool.baseInfo.adminWallet = adminAddress;
+        pool.stakeToken = stakeToken;
+        pool.rewardToken = rewardToken;
+        pool.rewardTokenPerSecond = rewardTokenPerSecond;
+        pool.lastRewardTimestamp = poolStartTime;
+        pool.startTime = poolStartTime;
+        pool.endTime = poolEndTime;
+        pool.adminWallet = adminAddress;
         pool.penaltyPeriod = penaltyPeriod;
         
     }
 
     /**
-     * @dev See {IERC20BasePool-stake}.
+     * @dev See {IBasePoolERC20-stake}.
      */
     function stake(uint256 amount) external validPool {
         if (amount == 0) revert InvalidAmount();
         _updatePool();
-        PenaltyUser storage user = userInfo[msg.sender];
-        uint256 share = pool.baseInfo.accRewardPerShare;
-        uint256 currentAmount = user.baseInfo.amount;
+        UserInfo storage user = userInfo[msg.sender];
+        uint256 share = pool.accRewardPerShare;
+        uint256 currentAmount = user.amount;
         if (currentAmount > 0) {
-            user.baseInfo.pending +=
+            user.pending +=
                 (currentAmount * share) /
                 PRECISION_FACTOR -
-                user.baseInfo.rewardDebt;
+                user.rewardDebt;
         }
         unchecked {
-            user.baseInfo.amount = currentAmount + amount;
+            user.amount = currentAmount + amount;
         }
         user.penaltyEndTime = block.timestamp + pool.penaltyPeriod >
-            pool.baseInfo.endTime
-            ? pool.baseInfo.endTime
+            pool.endTime
+            ? pool.endTime
             : block.timestamp + pool.penaltyPeriod;
-        user.baseInfo.rewardDebt = (user.baseInfo.amount * share) / PRECISION_FACTOR;
-        pool.baseInfo.totalStaked += amount;
-        IERC20(pool.baseInfo.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
+        user.rewardDebt = (user.amount * share) / PRECISION_FACTOR;
+        pool.totalStaked += amount;
+        IERC20(pool.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
         emit Stake(msg.sender, amount);
     }
 
     /**
-     * @dev See {IERC20BasePool-unstake}.
+     * @dev See {IBasePoolERC20-unstake}.
      */
     function unstake(uint256 amount) external nonReentrant {
         if (amount == 0) revert InvalidAmount();
-        PenaltyUser storage user = userInfo[msg.sender];
-        uint256 currentAmount = user.baseInfo.amount;
+        UserInfo storage user = userInfo[msg.sender];
+        uint256 currentAmount = user.amount;
         if (currentAmount < amount) revert InsufficientAmount(currentAmount, amount);
         _updatePool();
-        uint256 share = pool.baseInfo.accRewardPerShare;
+        uint256 share = pool.accRewardPerShare;
         if (block.timestamp <= user.penaltyEndTime) user.penalized = true;
-        user.baseInfo.pending += ((currentAmount * share) / PRECISION_FACTOR) - user.baseInfo.rewardDebt;
+        user.pending += ((currentAmount * share) / PRECISION_FACTOR) - user.rewardDebt;
         unchecked {
-            user.baseInfo.amount -= amount;
+            user.amount -= amount;
         }
-        user.baseInfo.rewardDebt = (user.baseInfo.amount * share) / PRECISION_FACTOR;
-        pool.baseInfo.totalStaked -= amount;
-        IERC20(pool.baseInfo.stakeToken).safeTransfer(msg.sender, amount);
+        user.rewardDebt = (user.amount * share) / PRECISION_FACTOR;
+        pool.totalStaked -= amount;
+        IERC20(pool.stakeToken).safeTransfer(msg.sender, amount);
         emit Unstake(msg.sender, amount);
     }
 
     /**
-     * @dev See {IERC20BasePool-claim}.
+     * @dev See {IBasePoolERC20-claim}.
      */
     function claim() external nonReentrant {
-        PenaltyUser storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         if (block.timestamp < user.penaltyEndTime)
-            revert TokensInLockup(block.timestamp, user.penaltyEndTime);
+            revert ClaimInLockup(block.timestamp, user.penaltyEndTime);
         _updatePool();
-        uint256 amount = user.baseInfo.amount;
-        uint256 pending = user.baseInfo.pending;
+        uint256 amount = user.amount;
+        uint256 pending = user.pending;
         if (amount > 0) {
             pending +=
-                (amount * pool.baseInfo.accRewardPerShare) /
+                (amount * pool.accRewardPerShare) /
                 PRECISION_FACTOR -
-                user.baseInfo.rewardDebt;
-            user.baseInfo.rewardDebt =
-                (amount * pool.baseInfo.accRewardPerShare) /
+                user.rewardDebt;
+            user.rewardDebt =
+                (amount * pool.accRewardPerShare) /
                 PRECISION_FACTOR;
         }
         if (pending == 0) revert NothingToClaim();
-        user.baseInfo.pending = 0;
+        user.pending = 0;
         uint256 penalityAmount = _calculatePenalizedAmount(
             user.penalized,
             pending
@@ -134,61 +134,61 @@ contract ERC20PenaltyFeePool is
         pending -= penalityAmount;
         if (user.penalized) user.penalized = false;
         unchecked {
-            user.baseInfo.claimed += pending;
+            user.claimed += pending;
         }
-        pool.baseInfo.totalClaimed += pending;
+        pool.totalClaimed += pending;
         pool.totalPenalties += penalityAmount;
-        IERC20(pool.baseInfo.rewardToken).safeTransfer(msg.sender, pending);
+        IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
         emit Claim(msg.sender, pending);
     }
 
     function claimFee() external nonReentrant onlyAdmin {
         uint256 penaltyAmount = pool.totalPenalties;
         if (penaltyAmount == 0) revert NothingToClaim();
-        IERC20(pool.baseInfo.rewardToken).safeTransfer(pool.baseInfo.adminWallet, penaltyAmount);
+        IERC20(pool.rewardToken).safeTransfer(pool.adminWallet, penaltyAmount);
         emit FeeClaim(penaltyAmount);
     }
 
     /**
-     * @dev See {IERC20BasePool-pendingRewards}.
+     * @dev See {IBasePoolERC20-pendingRewards}.
      */
     function pendingRewards(address userAddress) public view returns (uint256) {
-        PenaltyUser storage user = userInfo[userAddress];
-        uint256 share = pool.baseInfo.accRewardPerShare;
-        uint256 pending = user.baseInfo.pending;
+        UserInfo storage user = userInfo[userAddress];
+        uint256 share = pool.accRewardPerShare;
+        uint256 pending = user.pending;
         if (
-            block.timestamp > pool.baseInfo.lastRewardTimestamp && pool.baseInfo.totalStaked > 0
+            block.timestamp > pool.lastRewardTimestamp && pool.totalStaked > 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
                 block.timestamp,
-                pool.baseInfo.lastRewardTimestamp
+                pool.lastRewardTimestamp
             );
-            uint256 totalNewReward = pool.baseInfo.rewardTokenPerSecond * elapsedPeriod;
+            uint256 totalNewReward = pool.rewardTokenPerSecond * elapsedPeriod;
             share =
                 share +
-                ((totalNewReward * PRECISION_FACTOR) / pool.baseInfo.totalStaked);
+                ((totalNewReward * PRECISION_FACTOR) / pool.totalStaked);
         }
-        pending += ((user.baseInfo.amount * share) / PRECISION_FACTOR) - user.baseInfo.rewardDebt;
+        pending += ((user.amount * share) / PRECISION_FACTOR) - user.rewardDebt;
         return pending - _calculatePenalizedAmount(user.penalized, pending);
     }
 
     function _updatePool() internal {
-        if (block.timestamp > pool.baseInfo.lastRewardTimestamp) {
-            if (pool.baseInfo.totalStaked != 0) {
+        if (block.timestamp > pool.lastRewardTimestamp) {
+            if (pool.totalStaked != 0) {
                 uint256 elapsedPeriod = _getMultiplier(
                     block.timestamp,
-                    pool.baseInfo.lastRewardTimestamp
+                    pool.lastRewardTimestamp
                 );
-                pool.baseInfo.accRewardPerShare +=
-                    (pool.baseInfo.rewardTokenPerSecond *
+                pool.accRewardPerShare +=
+                    (pool.rewardTokenPerSecond *
                         PRECISION_FACTOR *
                         elapsedPeriod) /
-                    pool.baseInfo.totalStaked;
+                    pool.totalStaked;
             }
-            pool.baseInfo.lastRewardTimestamp = block.timestamp;
+            pool.lastRewardTimestamp = block.timestamp;
             emit UpdatePool(
-                pool.baseInfo.totalStaked,
-                pool.baseInfo.accRewardPerShare,
+                pool.totalStaked,
+                pool.accRewardPerShare,
                 block.timestamp
             );
         }
@@ -216,12 +216,12 @@ contract ERC20PenaltyFeePool is
         uint256 _from,
         uint256 _to
     ) internal view returns (uint256) {
-        if (_to <= pool.baseInfo.endTime) {
+        if (_to <= pool.endTime) {
             return _to - _from;
-        } else if (_from >= pool.baseInfo.endTime) {
+        } else if (_from >= pool.endTime) {
             return 0;
         } else {
-            return pool.baseInfo.endTime - _from;
+            return pool.endTime - _from;
         }
     }
 }

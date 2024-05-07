@@ -3,12 +3,12 @@ SPDX-License-Identifier: MIT
 */
 pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20BasePool} from "../interfaces/IERC20Pools/IERC20BasePool.sol";
+import {INoLockupPoolERC20} from "../interfaces/IERC20Pools/INoLockupPoolERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
+contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, INoLockupPoolERC20 {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
 
@@ -21,9 +21,9 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
         _;
     }
     ///@dev Public pool variable to access pool data
-    BasePoolInfo public pool;
+    Pool public pool;
     ///@dev Mapping to store user-specific staking information
-    mapping(address => BaseUserInfo) public userInfo;
+    mapping(address => UserInfo) public userInfo;
 
     /// @notice Constructor to initialize the staking pool with specified parameters
     /// @param stakeToken Address of the ERC20 token to be staked
@@ -52,12 +52,12 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-stake}.
+     * @dev See {IBasePoolERC20-stake}.
      */
     function stake(uint256 amount) external validPool {
         if (amount == 0) revert InvalidAmount();
         _updatePool();
-        BaseUserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 share = pool.accRewardPerShare;
         uint256 currentAmount = user.amount;
         if (currentAmount > 0) {
@@ -80,11 +80,11 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-unstake}.
+     * @dev See {IBasePoolERC20-unstake}.
      */
     function unstake(uint256 amount) external nonReentrant {
         if (amount == 0) revert InvalidAmount();
-        BaseUserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
         if (currentAmount < amount)
             revert InsufficientAmount(currentAmount, amount);
@@ -103,11 +103,11 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-claim}.
+     * @dev See {IBasePoolERC20-claim}.
      */
     function claim() external nonReentrant {
         _updatePool();
-        BaseUserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 amount = user.amount;
         uint256 pending = user.pending;
         if (amount > 0) {
@@ -131,12 +131,12 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-pendingRewards}.
+     * @dev See {IBasePoolERC20-pendingRewards}.
      */
     function pendingRewards(
         address userAddress
     ) external view returns (uint256) {
-        BaseUserInfo storage user = userInfo[userAddress];
+        UserInfo storage user = userInfo[userAddress];
         uint256 share = pool.accRewardPerShare;
         if (
             block.timestamp > pool.lastRewardTimestamp && pool.totalStaked != 0

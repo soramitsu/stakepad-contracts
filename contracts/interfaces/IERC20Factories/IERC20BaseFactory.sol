@@ -10,13 +10,12 @@ interface IERC20BaseFactory {
         DEPLOYED,
         CANCELED
     }
+    error InvalidId();
+    error InvalidRequestStatus();
+    error InvalidCaller();
+    error InvalidTokenAddress();
 
-    struct BaseDeploymentData {
-        address stakeToken;
-        address rewardToken;
-        uint256 rewardPerSecond;
-        uint256 poolStartTime;
-        uint256 poolEndTime;
-    }
+
+    event RequestStatusChanged(uint256 indexed id, Status indexed status);
     event CreateStakingPool(address indexed stakingAddress, address indexed stakeToken, address indexed rewardToken, uint256 rewardPerSecond, uint256 startTime, uint256 endTime, address owner);
 }
