@@ -53,6 +53,10 @@ interface IERC721BasePool {
      * @notice Error emitted when attempting an operation while pool is not active.
      */
     error PoolNotActive();
+    /**
+     * @notice Error emitted when attempting an operation while pool is not active.
+     */
+    error NotAdmin();
 
     // **Events**
 

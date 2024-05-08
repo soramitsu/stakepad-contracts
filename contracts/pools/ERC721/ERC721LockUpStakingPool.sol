@@ -6,7 +6,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721BasePool} from "../../interfaces/IERC721/IERC721BasePool.sol";
 import {IERC721LockUpPoolExtension} from "../../interfaces/IERC721/IERC721LockUpPoolExtension.sol";
-import {ILockUpPool} from "../../interfaces/ILockUpPool.sol";
 contract ERC721LockUpStakingPool is
     ReentrancyGuard,
     Ownable,
@@ -26,7 +25,7 @@ contract ERC721LockUpStakingPool is
 
     /// @dev Modifier to allow only the admin to execute certain functions
     modifier onlyAdmin() {
-        if (msg.sender != pool.baseInfo.adminWallet) revert NotAdmin();
+        if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
     }
 
@@ -122,7 +121,7 @@ contract ERC721LockUpStakingPool is
         _updatePool();
 
         // Get user information
-        User storage user = pool.userInfo[msg.sender];
+        BaseUserInfo storage user = pool.userInfo[msg.sender];
         uint256 amount = user.amount;
         uint256 pending = user.pending;
 

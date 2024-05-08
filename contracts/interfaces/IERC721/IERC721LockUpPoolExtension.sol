@@ -4,7 +4,6 @@ pragma solidity 0.8.25;
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721BasePool} from "./IERC721BasePool.sol";
-import {ILockUpPool} from "../ILockUpPool.sol";
 
 interface IERC721LockUpPoolExtension is IERC721BasePool{
     /**
@@ -37,7 +36,7 @@ interface IERC721LockUpPoolExtension is IERC721BasePool{
         uint256 accRewardPerShare;
         bool isActive;
         address adminWallet;
-        mapping(address => User) userInfo;
+        mapping(address => BaseUserInfo) userInfo;
         mapping(uint256 => address) stakedTokens;
         uint256 unstakeLockupTime; // Lockup period for unstaking
         uint256 claimLockupTime; // Lockup period for claiming rewards
