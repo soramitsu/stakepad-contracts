@@ -238,7 +238,7 @@ describe("Contract Deployment", async function () {
       expect(req.requestStatus).to.be.equal(3);
     });
 
-    it("Should correctly deploy pool from aproved request", async function () {
+    it("Should correctly deploy pool from APPROVED request", async function () {
       await mockRewardToken
         .connect(ayo)
         .approve(

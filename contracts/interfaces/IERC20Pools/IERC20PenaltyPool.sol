@@ -45,7 +45,7 @@ interface IERC20PenaltyPool is IBasePoolERC20 {
     
     /**
      * @notice Event to notify when an admin claims accumulated fees
-     * @dev Emmited in 'claim' function
+     * @dev Emited in 'claim' function
      * @param amount The amount of fees claimed
      */
     event FeeClaim(uint256 amount);

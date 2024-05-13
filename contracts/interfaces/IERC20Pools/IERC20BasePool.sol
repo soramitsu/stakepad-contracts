@@ -31,7 +31,7 @@ interface IBasePoolERC20 {
 
     /**
      * @notice Event to notify when a user stakes tokens
-     * @dev Emmited in 'stake' function
+     * @dev Emited in 'stake' function
      * @param user The address of the user who stakes tokens
      * @param amount The amount of tokens staked
      */
@@ -39,7 +39,7 @@ interface IBasePoolERC20 {
 
     /**
      * @notice Event to notify when a user unstakes tokens
-     * @dev Emmited in 'unstake' function
+     * @dev Emited in 'unstake' function
      * @param user The address of the user who unstakes tokens
      * @param amount The amount of tokens unstaked
      */
@@ -47,7 +47,7 @@ interface IBasePoolERC20 {
 
     /**
      * @notice Event to notify when a user claims rewards
-     * @dev Emmited in 'claim' function
+     * @dev Emited in 'claim' function
      * @param user The address of the user who claims rewards
      * @param amount The amount of rewards claimed
      */
@@ -55,7 +55,7 @@ interface IBasePoolERC20 {
 
     /**
      * @notice Event to notify when the staking pool is updated
-     * @dev Emmited in '_updatePool' function
+     * @dev Emited in '_updatePool' function
      * @param totalStaked The total amount of tokens staked in the pool
      * @param accumulatedRewardTokenPerShare The accumulated rewards per share
      * @param lastBlockTimestamp The timestamp of the last block with any user operation
