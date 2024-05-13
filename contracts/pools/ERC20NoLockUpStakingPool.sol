@@ -3,28 +3,23 @@ SPDX-License-Identifier: MIT
 */
 pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20BasePool} from "../interfaces/IERC20BasePool.sol";
+import {IERC20NoLockupPool} from "../interfaces/IERC20Pools/IERC20NoLockupPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
+contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPool {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
 
-    modifier onlyAdmin() {
-        if (msg.sender != pool.adminWallet) revert NotAdmin();
-        _;
-    }
     modifier validPool() {
         if (block.timestamp < pool.startTime) revert PoolNotStarted();
-        if (!pool.isActive) revert PoolNotActive();
         _;
     }
     ///@dev Public pool variable to access pool data
-    BasePoolInfo public pool;
+    Pool public pool;
     ///@dev Mapping to store user-specific staking information
-    mapping(address => BaseUserInfo) public userInfo;
+    mapping(address => UserInfo) public userInfo;
 
     /// @notice Constructor to initialize the staking pool with specified parameters
     /// @param stakeToken Address of the ERC20 token to be staked
@@ -32,33 +27,32 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     /// @param rewardTokenPerSecond Rate of rewards per second
     /// @param poolStartTime Start time of the staking pool
     /// @param poolEndTime End time of the staking pool
-    /// @param adminAddress Address of the admin
     constructor(
         address stakeToken,
         address rewardToken,
         uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
-        uint256 poolEndTime,
-        address adminAddress
+        uint256 poolEndTime
     ) Ownable(msg.sender) {
-        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
+        // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
+        // Ensure the staking period is valid
+        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastRewardTimestamp = poolStartTime;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.adminWallet = adminAddress;
     }
 
     /**
-     * @dev See {IERC20BasePool-stake}.
+     * @dev See {IBasePoolERC20-stake}.
      */
     function stake(uint256 amount) external validPool {
         if (amount == 0) revert InvalidAmount();
         _updatePool();
-        BaseUserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 share = pool.accRewardPerShare;
         uint256 currentAmount = user.amount;
         if (currentAmount > 0) {
@@ -81,11 +75,11 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-unstake}.
+     * @dev See {IBasePoolERC20-unstake}.
      */
     function unstake(uint256 amount) external nonReentrant {
         if (amount == 0) revert InvalidAmount();
-        BaseUserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
         if (currentAmount < amount)
             revert InsufficientAmount(currentAmount, amount);
@@ -104,11 +98,11 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-claim}.
+     * @dev See {IBasePoolERC20-claim}.
      */
     function claim() external nonReentrant {
         _updatePool();
-        BaseUserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 amount = user.amount;
         uint256 pending = user.pending;
         if (amount > 0) {
@@ -132,41 +126,12 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20BasePool {
     }
 
     /**
-     * @dev See {IERC20BasePool-activate}.
-     */
-    function activate() external onlyAdmin {
-        // Check if the pool is already active
-        if (pool.isActive) revert PoolIsActive();
-        // Check if the current timestamp is after the end time of the pool
-        if (block.timestamp >= pool.endTime) revert PoolHasEnded();
-        // Activate the pool
-        pool.isActive = true;
-        uint256 timestampToFund = pool.startTime;
-        if (block.timestamp > timestampToFund) {
-            timestampToFund = block.timestamp;
-            pool.lastRewardTimestamp = timestampToFund;
-        }
-        // Calculate the reward amount to fund the pool
-        uint256 rewardAmount = (pool.endTime - timestampToFund) *
-            pool.rewardTokenPerSecond;
-        // Transfer reward tokens from the owner to the contract
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(pool.rewardToken).safeTransferFrom(
-            owner(),
-            address(this),
-            rewardAmount
-        );
-        // Emit activation event
-        emit ActivatePool(rewardAmount);
-    }
-
-    /**
-     * @dev See {IERC20BasePool-pendingRewards}.
+     * @dev See {IBasePoolERC20-pendingRewards}.
      */
     function pendingRewards(
         address userAddress
     ) external view returns (uint256) {
-        BaseUserInfo storage user = userInfo[userAddress];
+        UserInfo storage user = userInfo[userAddress];
         uint256 share = pool.accRewardPerShare;
         if (
             block.timestamp > pool.lastRewardTimestamp && pool.totalStaked != 0
