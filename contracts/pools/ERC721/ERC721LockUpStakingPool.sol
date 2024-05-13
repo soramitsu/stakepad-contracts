@@ -1,44 +1,39 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
+
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721BasePool} from "../../interfaces/IERC721/IERC721BasePool.sol";
-import {IERC721LockUpPoolExtension} from "../../interfaces/IERC721/IERC721LockUpPoolExtension.sol";
+import {IERC721LockUpPool} from "../../interfaces/IERC721/IERC721LockUpPool.sol";
+
 contract ERC721LockUpStakingPool is
     ReentrancyGuard,
     Ownable,
-    IERC721LockUpPoolExtension
+    IERC721LockUpPool
 {
     using SafeERC20 for IERC20;
-
 
     /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
     modifier validPool() {
         if (block.timestamp < pool.startTime) revert PoolNotStarted();
-        if (!pool.isActive) revert PoolNotActive();
         _;
     }
     ///@dev Mapping to store user-specific staking information
-    mapping(address => BaseUserInfo) public userInfo;
+    mapping(address => UserInfo) public userInfo;
 
-    /// @dev Modifier to allow only the admin to execute certain functions
-    modifier onlyAdmin() {
-        if (msg.sender != pool.adminWallet) revert NotAdmin();
-        _;
-    }
-
-    Pool public pool;
+    LockupPool public pool;
 
     constructor(
         address stakeToken,
         address rewardToken,
+        uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
         uint256 unstakeLockupTime,
-        uint256 claimLockUpTime,
-        uint256 rewardTokenPerSecond
+        uint256 claimLockUpTime
     ) Ownable(msg.sender) {
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
@@ -61,52 +56,67 @@ contract ERC721LockUpStakingPool is
     /**
      * @dev See {IERC721BasePool-stake}.
      */
-    function stake(uint256[] calldata _tokenIds) external validPool {
-        //update parameters
+    function stake(uint256[] calldata tokenIds) external validPool {
+        uint256 amount = tokenIds.length;
+        if (amount == 0) revert InvalidAmount();
+
+        UserInfo storage user = userInfo[msg.sender];
         _updatePool();
-
-        uint64 len = uint64(_tokenIds.length);
-        if (len == 0) {
-            revert ZeroStakingTokens();
+        uint256 share = pool.accRewardPerShare;
+        uint256 currentAmount = user.amount;
+        // Calculate pending rewards
+        if (currentAmount > 0) {
+            user.pending += (currentAmount * share) - user.rewardDebt;
         }
+        // Update user data
+        unchecked {
+            user.amount = currentAmount + amount;
+        }
+        user.rewardDebt = user.amount * share;
+        pool.totalStaked += amount;
 
-        for (uint64 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < amount; i++) {
             pool.stakeToken.safeTransferFrom(
                 msg.sender,
                 address(this),
-                _tokenIds[i]
+                tokenIds[i]
             );
-            pool.stakedTokens[_tokenIds[i]] = msg.sender;
+            pool.stakedTokens[tokenIds[i]] = msg.sender;
         }
-        pool.userInfo[msg.sender].amount += len;
-        pool.totalStaked += len;
-        emit Staked(msg.sender, _tokenIds);
+        emit Stake(msg.sender, tokenIds);
     }
 
     /**
      * @dev See {IERC721BasePool-unstake}.
      */
-    function unstake(uint256[] calldata _tokenIds) external {
-        uint256 _amount = _tokenIds.length;
-        if (_amount > pool.userInfo[msg.sender].amount) {
-            revert NotEnoughTokens();
-        }
+    function unstake(uint256[] calldata tokenIds) external {
+        uint256 amount = tokenIds.length;
+        if (amount == 0) revert InvalidAmount();
+        UserInfo storage user = userInfo[msg.sender];
+        uint256 currentAmount = user.amount;
+        if (amount > currentAmount) revert NotEnoughTokens();
         _updatePool();
+        uint256 share = pool.accRewardPerShare;
 
-        for (uint256 i = _amount; i < _amount; i++) {
-            if (pool.stakedTokens[_tokenIds[i]] != msg.sender) {
+        user.pending += (currentAmount * share) - user.rewardDebt;
+        // Update user data
+        unchecked {
+            user.amount -= amount;
+        }
+        pool.totalStaked -= amount;
+
+        for (uint256 i = amount; i < amount; i++) {
+            if (pool.stakedTokens[tokenIds[i]] != msg.sender)
                 revert NotStaker();
-            }
             pool.stakeToken.safeTransferFrom(
                 address(this),
                 msg.sender,
-                _tokenIds[i]
+                tokenIds[i]
             );
-            pool.stakedTokens[_tokenIds[1]] = address(0);
+            pool.stakedTokens[tokenIds[1]] = address(0);
         }
-        pool.userInfo[msg.sender].amount -= _amount;
-        pool.totalStaked -= _amount;
-        emit UnStaked(msg.sender, _tokenIds);
+
+        emit Unstake(msg.sender, tokenIds);
     }
 
     /**
@@ -121,7 +131,7 @@ contract ERC721LockUpStakingPool is
         _updatePool();
 
         // Get user information
-        BaseUserInfo storage user = pool.userInfo[msg.sender];
+        UserInfo storage user = userInfo[msg.sender];
         uint256 amount = user.amount;
         uint256 pending = user.pending;
 
@@ -160,6 +170,7 @@ contract ERC721LockUpStakingPool is
             }
         }
     }
+
     function _getMultiplier(
         uint256 _from,
         uint256 _to
