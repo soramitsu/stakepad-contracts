@@ -3,19 +3,15 @@ SPDX-License-Identifier: MIT
 */
 pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {INoLockupPoolERC20} from "../interfaces/IERC20Pools/INoLockupPoolERC20.sol";
+import {IERC20NoLockupPool} from "../interfaces/IERC20Pools/IERC20NoLockupPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, INoLockupPoolERC20 {
+contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPool {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
 
-    modifier onlyAdmin() {
-        if (msg.sender != pool.adminWallet) revert NotAdmin();
-        _;
-    }
     modifier validPool() {
         if (block.timestamp < pool.startTime) revert PoolNotStarted();
         _;
@@ -31,24 +27,23 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, INoLockupPoolERC2
     /// @param rewardTokenPerSecond Rate of rewards per second
     /// @param poolStartTime Start time of the staking pool
     /// @param poolEndTime End time of the staking pool
-    /// @param adminAddress Address of the admin
     constructor(
         address stakeToken,
         address rewardToken,
         uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
-        uint256 poolEndTime,
-        address adminAddress
+        uint256 poolEndTime
     ) Ownable(msg.sender) {
-        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
+        // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
+        // Ensure the staking period is valid
+        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastRewardTimestamp = poolStartTime;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.adminWallet = adminAddress;
     }
 
     /**

@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 // Import OpenZeppelin contracts for ERC20 token interaction, reentrancy protection, safe token transfers, and ownership management.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ILockUpPoolERC20} from "../interfaces/IERC20Pools/IERC20LockUpPoolExtension.sol";
+import {IERC20LockupPool} from "../interfaces/IERC20Pools/IERC20LockUpPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -13,7 +13,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20LockUpStakingPool is
     ReentrancyGuard,
     Ownable,
-    ILockUpPoolERC20
+    IERC20LockupPool
 {
     using SafeERC20 for IERC20;
 
@@ -24,12 +24,6 @@ contract ERC20LockUpStakingPool is
     LockUpPool public pool;
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
-
-    /// @dev Modifier to allow only the admin to execute certain functions
-    modifier onlyAdmin() {
-        if (msg.sender != pool.adminWallet) revert NotAdmin();
-        _;
-    }
 
     /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
     modifier validPool() {
@@ -45,7 +39,6 @@ contract ERC20LockUpStakingPool is
     /// @param poolEndTime End time of the staking pool
     /// @param unstakeLockup Lockup period for unstaking
     /// @param claimLockup Lockup period for claiming rewards
-    /// @param adminAddress Address of the admin
     constructor(
         address stakeToken,
         address rewardToken,
@@ -53,13 +46,12 @@ contract ERC20LockUpStakingPool is
         uint256 poolStartTime,
         uint256 poolEndTime,
         uint256 unstakeLockup,
-        uint256 claimLockup,
-        address adminAddress
+        uint256 claimLockup
     ) Ownable(msg.sender) {
-        // Ensure the staking period is valid
-        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
+        // Ensure the staking period is valid
+        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the lockup periods are valid
         if (unstakeLockup > poolEndTime || claimLockup > poolEndTime)
             revert InvalidLockupTime();
@@ -71,7 +63,6 @@ contract ERC20LockUpStakingPool is
         pool.lastRewardTimestamp = poolStartTime;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.adminWallet = adminAddress;
         pool.unstakeLockupTime = unstakeLockup;
         pool.claimLockupTime = claimLockup;
     }

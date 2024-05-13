@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPenaltyPoolERC20} from "../interfaces/IERC20Pools/IERC20PenaltyPoolExtension.sol";
+import {IERC20PenaltyPool} from "../interfaces/IERC20Pools/IERC20PenaltyPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,7 +12,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract ERC20PenaltyFeePool is
     ReentrancyGuard,
     Ownable,
-    IPenaltyPoolERC20
+    IERC20PenaltyPool
 {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
@@ -42,8 +42,10 @@ contract ERC20PenaltyFeePool is
         uint256 penaltyPeriod,
         address adminAddress
     ) Ownable(msg.sender) {
-        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
+        // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
+        // Ensure the staking period is valid
+        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         if (poolEndTime - poolStartTime > penaltyPeriod)
             revert InvalidPenaltyPeriod();
         pool.stakeToken = stakeToken;
@@ -54,7 +56,6 @@ contract ERC20PenaltyFeePool is
         pool.endTime = poolEndTime;
         pool.adminWallet = adminAddress;
         pool.penaltyPeriod = penaltyPeriod;
-        
     }
 
     /**

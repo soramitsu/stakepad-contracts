@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 import {IBasePoolERC20} from "./IERC20BasePool.sol";
-interface INoLockupPoolERC20 is IBasePoolERC20 {
+
+interface IERC20LockupPool is IBasePoolERC20 {
     struct UserInfo {
         uint256 amount; // Amount of tokens staked
         uint256 claimed; // Amount of claimed rewards
@@ -9,16 +10,29 @@ interface INoLockupPoolERC20 is IBasePoolERC20 {
         uint256 pending; // Pending rewards
     }
 
-    struct Pool {
+    struct LockUpPool {
         address stakeToken; // ERC20 token being staked
         address rewardToken; // ERC20 token used for rewards
         uint256 startTime; // Start time of the staking pool
         uint256 endTime; // End time of the staking pool
+        uint256 unstakeLockupTime; // Lockup period for unstaking
+        uint256 claimLockupTime; // Lockup period for claiming rewards
         uint256 rewardTokenPerSecond; // Rate of rewards per second
         uint256 totalStaked; // Total amount of tokens staked
         uint256 totalClaimed; // Total amount of claimed rewards
         uint256 lastRewardTimestamp; // Timestamp of the last reward update
         uint256 accRewardPerShare; // Accumulated rewards per share
-        address adminWallet; // Address of the admin
     }
+
+    /**
+     *  ERROR MESSAGES
+     */
+
+    /// @dev Error to indicate that tokens are still in lockup and cannot be accessed
+    /// @param currentTime The current timestamp
+    /// @param unlockTime The timestamp when the tokens will be unlocked
+    error TokensInLockup(uint256 currentTime, uint256 unlockTime);
+
+    /// @dev Error to indicate an invalid lockup time for unstaking or claiming rewards
+    error InvalidLockupTime();
 }

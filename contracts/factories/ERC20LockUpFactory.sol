@@ -5,20 +5,20 @@ SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.25;
 import {ERC20LockUpStakingPool} from "../pools/ERC20LockUpStakingPool.sol";
-import {IERC20LockUpFactoryExtension} from "../interfaces/IERC20Factories/IERC20LockUpFactoryExtension.sol";
+import {IERC20LockUpFactory} from "../interfaces/IERC20Factories/IERC20LockUpFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title ERC20LockUpStakingFactory
 /// @notice A smart contract for deploying ERC20 lockup staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
+contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
     Request[] public requests;
+    mapping(uint256 id => address pool) public poolById;
 
     constructor() Ownable(msg.sender) {}
 
@@ -46,12 +46,12 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
                 req.data.poolStartTime,
                 req.data.poolEndTime,
                 req.data.unstakeLockupTime,
-                req.data.claimLockupTime,
-                owner()
+                req.data.claimLockupTime
             )
         );
         stakingPools.push(newPoolAddress);
         requests[id].requestStatus = Status.DEPLOYED;
+        poolById[id] = newPoolAddress;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
         ERC20LockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
@@ -62,22 +62,25 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
             newPoolAddress,
             rewardAmount
         );
-        emit CreateStakingPool(
-            newPoolAddress,
-            req.data.stakeToken,
-            req.data.rewardToken,
-            req.data.rewardPerSecond,
-            req.data.poolStartTime,
-            req.data.poolEndTime,
-            msg.sender
-        );
+        emit StakingPoolDeployed(newPoolAddress, id);
     }
 
     function requestDeployment(DeploymentData calldata data) external {
         if (data.stakeToken == address(0) || data.rewardToken == address(0))
             revert InvalidTokenAddress();
+        if (data.rewardPerSecond == 0) revert InvalidRewardRate();
         requests.push(
-            Request(requests.length, msg.sender, Status.CREATED, data)
+            Request({
+                deployer: msg.sender,
+                requestStatus: Status.CREATED,
+                data: data
+            })
+        );
+        emit RequestSubmitted(
+            requests.length - 1,
+            msg.sender,
+            Status.CREATED,
+            data
         );
     }
 
@@ -100,8 +103,11 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactoryExtension {
     function cancelRequest(uint256 id) external {
         if (requests.length < id) revert InvalidId();
         Request storage req = requests[id];
-        if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
+        if (
+            req.requestStatus != Status.CREATED &&
+            req.requestStatus != Status.APROVED
+        ) revert InvalidRequestStatus();
         req.requestStatus = Status.CANCELED;
         emit RequestStatusChanged(id, req.requestStatus);
     }

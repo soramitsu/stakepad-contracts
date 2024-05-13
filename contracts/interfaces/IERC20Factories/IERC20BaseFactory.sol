@@ -14,8 +14,7 @@ interface IERC20BaseFactory {
     error InvalidRequestStatus();
     error InvalidCaller();
     error InvalidTokenAddress();
-
-
+    error InvalidRewardRate();
+    
     event RequestStatusChanged(uint256 indexed id, Status indexed status);
-    event CreateStakingPool(address indexed stakingAddress, address indexed stakeToken, address indexed rewardToken, uint256 rewardPerSecond, uint256 startTime, uint256 endTime, address owner);
 }
