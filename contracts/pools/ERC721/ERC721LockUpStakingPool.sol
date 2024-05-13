@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721BasePool} from "../../interfaces/IERC721/IERC721BasePool.sol";
 import {IERC721LockUpPool} from "../../interfaces/IERC721/IERC721LockUpPool.sol";
 
 contract ERC721LockUpStakingPool is
@@ -76,12 +75,12 @@ contract ERC721LockUpStakingPool is
         pool.totalStaked += amount;
 
         for (uint256 i = 0; i < amount; i++) {
+            pool.stakedTokens[tokenIds[i]] = msg.sender;
             pool.stakeToken.safeTransferFrom(
                 msg.sender,
                 address(this),
                 tokenIds[i]
             );
-            pool.stakedTokens[tokenIds[i]] = msg.sender;
         }
         emit Stake(msg.sender, tokenIds);
     }
@@ -89,7 +88,7 @@ contract ERC721LockUpStakingPool is
     /**
      * @dev See {IERC721BasePool-unstake}.
      */
-    function unstake(uint256[] calldata tokenIds) external {
+    function unstake(uint256[] calldata tokenIds) external nonReentrant {
         uint256 amount = tokenIds.length;
         if (amount == 0) revert InvalidAmount();
         UserInfo storage user = userInfo[msg.sender];
@@ -97,25 +96,24 @@ contract ERC721LockUpStakingPool is
         if (amount > currentAmount) revert NotEnoughTokens();
         _updatePool();
         uint256 share = pool.accRewardPerShare;
-
         user.pending += (currentAmount * share) - user.rewardDebt;
         // Update user data
         unchecked {
             user.amount -= amount;
         }
+        user.rewardDebt = user.amount * share;
         pool.totalStaked -= amount;
 
-        for (uint256 i = amount; i < amount; i++) {
+        for (uint256 i = 0; i < amount; i++) {
             if (pool.stakedTokens[tokenIds[i]] != msg.sender)
                 revert NotStaker();
+            pool.stakedTokens[tokenIds[i]] = address(0);
             pool.stakeToken.safeTransferFrom(
                 address(this),
                 msg.sender,
                 tokenIds[i]
             );
-            pool.stakedTokens[tokenIds[1]] = address(0);
         }
-
         emit Unstake(msg.sender, tokenIds);
     }
 
