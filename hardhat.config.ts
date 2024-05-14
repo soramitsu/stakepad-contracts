@@ -3,6 +3,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import '@nomicfoundation/hardhat-verify';
 import 'hardhat-gas-reporter';
 import '@typechain/hardhat';
+import 'solidity-coverage';
 import '@nomicfoundation/hardhat-network-helpers';
 import '@nomicfoundation/hardhat-ethers';
 import '@nomicfoundation/hardhat-chai-matchers';

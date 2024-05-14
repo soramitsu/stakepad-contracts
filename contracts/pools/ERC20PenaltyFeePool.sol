@@ -117,7 +117,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IERC20PenaltyPool {
     function claim() external nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         if (block.timestamp < user.penaltyEndTime)
-            revert ClaimInLockup(block.timestamp, user.penaltyEndTime);
+            revert ClaimInLockUp(block.timestamp, user.penaltyEndTime);
         _updatePool();
         uint256 amount = user.amount;
         uint256 pending = user.pending;

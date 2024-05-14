@@ -4,16 +4,16 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20NoLockUpPool} from "../pools/ERC20NoLockUpStakingPool.sol";
+import {ERC721NoLockUpPool} from "../pools/ERC721/ERC721NoLockUpStakingPool.sol";
 import {INoLockUpFactory} from "../interfaces/IFactories/INoLockUpFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockUpStakingFactory
-/// @notice A smart contract for deploying ERC20 regular staking pools.
+/// @title ERC721NoLockUpStakingFactory
+/// @notice A smart contract for deploying ERC721 regular staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20NoLockUpStakingFactory is Ownable, INoLockUpFactory {
+contract ERC721NoLockUpStakingFactory is Ownable, INoLockUpFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
@@ -29,7 +29,7 @@ contract ERC20NoLockUpStakingFactory is Ownable, INoLockUpFactory {
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20NoLockUpPool{
+            new ERC721NoLockUpPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -52,7 +52,7 @@ contract ERC20NoLockUpStakingFactory is Ownable, INoLockUpFactory {
         poolById[id] = newPoolAddress;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
-        ERC20NoLockUpPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC721NoLockUpPool(newPoolAddress).transferOwnership(msg.sender);
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(req.data.rewardToken).safeTransferFrom(

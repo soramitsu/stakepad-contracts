@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 import {IBasePoolERC20} from "./IERC20BasePool.sol";
-interface IERC20NoLockupPool is IBasePoolERC20 {
+interface IERC20NoLockUpPool is IBasePoolERC20 {
     struct UserInfo {
         uint256 amount; // Amount of tokens staked
         uint256 claimed; // Amount of claimed rewards

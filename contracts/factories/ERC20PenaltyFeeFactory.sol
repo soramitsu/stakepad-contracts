@@ -5,15 +5,15 @@ SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.25;
 import {ERC20PenaltyFeePool} from "../pools/ERC20PenaltyFeePool.sol";
-import {IERC20PenaltyFeeFactory} from "../interfaces/IERC20Factories/IERC20PenaltyFeeFactory.sol";
+import {IPenaltyFeeFactory} from "../interfaces/IFactories/IPenaltyFeeFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockUpStakingFactory
+/// @title ERC20PenaltyFeeStakingFactory
 /// @notice A smart contract for deploying ERC20 staking pools with penalty fees.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20PenaltyFeeStakingFactory is Ownable, IERC20PenaltyFeeFactory {
+contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;

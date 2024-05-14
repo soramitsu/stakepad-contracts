@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-interface IERC20BaseFactory {
+interface IBaseFactory {
     enum Status {
         UNKNOWN,
         CREATED,
