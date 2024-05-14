@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
-import {IERC20BaseFactory} from "./IERC20BaseFactory.sol";
+import {IBaseFactory} from "./IBaseFactory.sol";
 
-interface IERC20NoLockupFactory is IERC20BaseFactory {
+interface INoLockupFactory is IBaseFactory {
     
     struct DeploymentData {
         address stakeToken;

@@ -4,16 +4,16 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20PenaltyFeePool} from "../pools/ERC20PenaltyFeePool.sol";
-import {IPenaltyFeeFactory} from "../interfaces/IFactories/IPenaltyFeeFactory.sol";
+import {ERC721LockupPool} from "../pools/ERC721/ERC721LockupStakingPool.sol";
+import {ILockupFactory} from "../interfaces/IFactories/ILockupFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockupStakingFactory
-/// @notice A smart contract for deploying ERC20 staking pools with penalty fees.
+/// @title ERC721LockupStakingFactory
+/// @notice A smart contract for deploying ERC721 Lockup staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
+contract ERC721LockupStakingFactory is Ownable, ILockupFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
@@ -22,14 +22,14 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
 
     constructor() Ownable(msg.sender) {}
 
-    /// @notice Function allows users to deploy the penaltyFee staking pool with specified parameters
-     function deploy(uint256 id) public returns (address newPoolAddress) {
+    /// @notice Function allows users to deploy the Lockup staking pool with specified parameters
+    function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
         Request memory req = requests[id];
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20PenaltyFeePool{
+            new ERC721LockupPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -42,15 +42,26 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
             }(
                 req.data.stakeToken,
                 req.data.rewardToken,
-                req.data.rewardPerSecond,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
-                req.data.penaltyPeriod,
-                owner()
+                req.data.unstakeLockupTime,
+                req.data.claimLockupTime,
+                req.data.rewardPerSecond
             )
         );
         stakingPools.push(newPoolAddress);
-        ERC20PenaltyFeePool(newPoolAddress).transferOwnership(msg.sender);
+        requests[id].requestStatus = Status.DEPLOYED;
+        poolById[id] = newPoolAddress;
+        uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
+            req.data.rewardPerSecond;
+        ERC721LockupPool(newPoolAddress).transferOwnership(msg.sender);
+        // Transfer reward tokens from the owner to the contract
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(req.data.rewardToken).safeTransferFrom(
+            msg.sender,
+            newPoolAddress,
+            rewardAmount
+        );
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 
@@ -94,7 +105,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         Request storage req = requests[id];
         if (msg.sender != req.deployer) revert InvalidCaller();
         if (
-            req.requestStatus != Status.CREATED ||
+            req.requestStatus != Status.CREATED &&
             req.requestStatus != Status.APPROVED
         ) revert InvalidRequestStatus();
         req.requestStatus = Status.CANCELED;

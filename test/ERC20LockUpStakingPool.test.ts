@@ -7,8 +7,8 @@ import {
 import {
   ERC20LockupPool,
   ERC20MockToken,
-  ERC20LockUpStakingFactory,
-  ERC20LockUpStakingFactory__factory,
+  ERC20LockupStakingFactory,
+  ERC20LockupStakingFactory__factory,
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { parseEther } from "ethers";
@@ -27,8 +27,8 @@ interface DeploymentParams {
 let PRECISION_FACTOR = BigInt(10e18);
 
 describe("Contract Deployment", async function () {
-  let StakingFactory: ERC20LockUpStakingFactory__factory;
-  let ercStakingPoolFactory: ERC20LockUpStakingFactory;
+  let StakingFactory: ERC20LockupStakingFactory__factory;
+  let ercStakingPoolFactory: ERC20LockupStakingFactory;
   let mockStakeToken: ERC20MockToken;
   let mockRewardToken: ERC20MockToken;
   let rewardTokenPerSecond: bigint;
@@ -44,7 +44,7 @@ describe("Contract Deployment", async function () {
 
   before(async () => {
     StakingFactory = await ethers.getContractFactory(
-      "ERC20LockUpStakingFactory"
+      "ERC20LockupStakingFactory"
     );
     ercStakingPoolFactory = await StakingFactory.deploy();
     const blockTimestamp = await time.latest();
@@ -77,7 +77,7 @@ describe("Contract Deployment", async function () {
     );
   });
 
-  describe("ERC20LockUpStakingPool Deployment", async function () {
+  describe("ERC20LockupStakingPool Deployment", async function () {
     it("Request creation failed: invalid staking token address", async function () {
       poolStartTime += 100;
       poolEndTime = poolStartTime + 120;
@@ -255,7 +255,7 @@ describe("Contract Deployment", async function () {
       expect(req.requestStatus).to.be.equal(3);
     });
 
-    it("Another requests created with wrong unstake lockup time", async function () {
+    it("Another requests created with wrong unstake Lockup time", async function () {
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: await mockRewardToken.getAddress(),
@@ -276,7 +276,7 @@ describe("Contract Deployment", async function () {
       await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockupTime");
     });
 
-    it("Another requests created with wrong claim lockup time", async function () {
+    it("Another requests created with wrong claim Lockup time", async function () {
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: await mockRewardToken.getAddress(),

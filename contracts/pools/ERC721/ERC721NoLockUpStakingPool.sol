@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721NoLockupPool} from "../../interfaces/IERC721/IERC721NoLockupPool.sol";
 
-contract ERC721LockUpPool is
+contract ERC721NoLockupPool is
     ReentrancyGuard,
     Ownable,
     IERC721NoLockupPool

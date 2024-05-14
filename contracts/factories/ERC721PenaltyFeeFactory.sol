@@ -4,14 +4,14 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20PenaltyFeePool} from "../pools/ERC20PenaltyFeePool.sol";
+import {draftERC721PenaltyFeepPool} from "../pools/ERC721/ERC721PenaltyFeePool.sol";
 import {IPenaltyFeeFactory} from "../interfaces/IFactories/IPenaltyFeeFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockupStakingFactory
-/// @notice A smart contract for deploying ERC20 staking pools with penalty fees.
+/// @title ERC721PenaltyFeeStakingFactory
+/// @notice A smart contract for deploying ERC721 staking pools with penalty fees.
 /// @author Ayooluwa Akindeko, Soramitsu team
 contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     using SafeERC20 for IERC20;
@@ -29,7 +29,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20PenaltyFeePool{
+            new draftERC721PenaltyFeepPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -50,7 +50,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
             )
         );
         stakingPools.push(newPoolAddress);
-        ERC20PenaltyFeePool(newPoolAddress).transferOwnership(msg.sender);
+        draftERC721PenaltyFeepPool(newPoolAddress).transferOwnership(msg.sender);
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 

@@ -10,7 +10,7 @@ interface IERC20LockupPool is IBasePoolERC20 {
         uint256 pending; // Pending rewards
     }
 
-    struct LockUpPool {
+    struct LockupPool {
         address stakeToken; // ERC20 token being staked
         address rewardToken; // ERC20 token used for rewards
         uint256 startTime; // Start time of the staking pool
@@ -28,11 +28,11 @@ interface IERC20LockupPool is IBasePoolERC20 {
      *  ERROR MESSAGES
      */
 
-    /// @dev Error to indicate that tokens are still in lockup and cannot be accessed
+    /// @dev Error to indicate that tokens are still in Lockup and cannot be accessed
     /// @param currentTime The current timestamp
     /// @param unlockTime The timestamp when the tokens will be unlocked
     error TokensInLockup(uint256 currentTime, uint256 unlockTime);
 
-    /// @dev Error to indicate an invalid lockup time for unstaking or claiming rewards
+    /// @dev Error to indicate an invalid Lockup time for unstaking or claiming rewards
     error InvalidLockupTime();
 }

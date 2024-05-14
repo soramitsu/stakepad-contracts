@@ -1,19 +1,19 @@
 /*
-ERC20LockUpFactory
+ERC20LockupFactory
 SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20LockupPool} from "../pools/ERC20LockUpStakingPool.sol";
-import {IERC20LockUpFactory} from "../interfaces/IERC20Factories/IERC20LockUpFactory.sol";
+import {ERC20LockupPool} from "../pools/ERC20LockupStakingPool.sol";
+import {ILockupFactory} from "../interfaces/IFactories/ILockupFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockUpStakingFactory
-/// @notice A smart contract for deploying ERC20 lockup staking pools.
+/// @title ERC20LockupStakingFactory
+/// @notice A smart contract for deploying ERC20 Lockup staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactory {
+contract ERC20LockupStakingFactory is Ownable, ILockupFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
@@ -22,7 +22,7 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactory {
 
     constructor() Ownable(msg.sender) {}
 
-    /// @notice Function allows users to deploy the lockup staking pool with specified parameters
+    /// @notice Function allows users to deploy the Lockup staking pool with specified parameters
     function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
         Request memory req = requests[id];

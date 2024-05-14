@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 // Import OpenZeppelin contracts for ERC20 token interaction, reentrancy protection, safe token transfers, and ownership management.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20LockupPool} from "../interfaces/IERC20Pools/IERC20LockUpPool.sol";
+import {IERC20LockupPool} from "../interfaces/IERC20Pools/IERC20LockupPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -17,7 +17,7 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
     uint256 public constant PRECISION_FACTOR = 10e18;
 
     ///@dev Public pool variable to access pool data
-    LockUpPool public pool;
+    LockupPool public pool;
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
 
@@ -49,7 +49,7 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
-        // Ensure the lockup periods are valid
+        // Ensure the Lockup periods are valid
         if (unstakeLockup > poolEndTime || claimLockup > poolEndTime)
             revert InvalidLockupTime();
 
@@ -105,7 +105,7 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
      */
     function unstake(uint256 amount) external nonReentrant {
         if (amount == 0) revert InvalidAmount();
-        // Check if the current timestamp is before the unstake lockup time
+        // Check if the current timestamp is before the unstake Lockup time
         if (block.timestamp < pool.unstakeLockupTime)
             revert TokensInLockup(block.timestamp, pool.unstakeLockupTime);
         // Get user information
@@ -139,7 +139,7 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
      * @dev See {IBasePoolERC20-claim}.
      */
     function claim() external nonReentrant {
-        // Check if the current timestamp is before the claim lockup time
+        // Check if the current timestamp is before the claim Lockup time
         if (block.timestamp < pool.claimLockupTime)
             revert TokensInLockup(block.timestamp, pool.claimLockupTime);
         // Update the pool

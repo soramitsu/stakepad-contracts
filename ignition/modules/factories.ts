@@ -1,8 +1,8 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-export default buildModule("LockUpFactory", (m) => {
-  const factory = m.contract("ERC20NoLockUpStakingFactory", []);
-  const lockUpfactory = m.contract("ERC20LockUpStakingFactory", []);
+export default buildModule("LockupFactory", (m) => {
+  const factory = m.contract("ERC20NoLockupStakingFactory", []);
+  const Lockupfactory = m.contract("ERC20LockupStakingFactory", []);
   const feeFactory = m.contract("ERC20PenaltyFeeStakingFactory", []);
-  return { factory, lockUpfactory, feeFactory };
+  return { factory, Lockupfactory, feeFactory };
 });
