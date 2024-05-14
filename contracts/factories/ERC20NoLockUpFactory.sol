@@ -1,19 +1,19 @@
 /*
-ERC20LockupFactory
+ERC20LockUpFactory
 SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20NoLockupPool} from "../pools/ERC20NoLockupStakingPool.sol";
-import {INoLockupFactory} from "../interfaces/IFactories/INoLockupFactory.sol";
+import {ERC20NoLockUpPool} from "../pools/ERC20NoLockUpStakingPool.sol";
+import {INoLockUpFactory} from "../interfaces/IFactories/INoLockUpFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockupStakingFactory
+/// @title ERC20LockUpStakingFactory
 /// @notice A smart contract for deploying ERC20 regular staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20NoLockupStakingFactory is Ownable, INoLockupFactory {
+contract ERC20NoLockUpStakingFactory is Ownable, INoLockUpFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
@@ -22,14 +22,14 @@ contract ERC20NoLockupStakingFactory is Ownable, INoLockupFactory {
 
     constructor() Ownable(msg.sender) {}
 
-    /// @notice Function allows users to deploy the Lockup staking pool with specified parameters
+    /// @notice Function allows users to deploy the LockUp staking pool with specified parameters
     function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
         Request memory req = requests[id];
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20NoLockupPool{
+            new ERC20NoLockUpPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -52,7 +52,7 @@ contract ERC20NoLockupStakingFactory is Ownable, INoLockupFactory {
         poolById[id] = newPoolAddress;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
-        ERC20NoLockupPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC20NoLockUpPool(newPoolAddress).transferOwnership(msg.sender);
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(req.data.rewardToken).safeTransferFrom(

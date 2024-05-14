@@ -6,12 +6,12 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721LockupPool} from "../../interfaces/IERC721/IERC721LockupPool.sol";
+import {IERC721LockUpPool} from "../../interfaces/IERC721/IERC721LockUpPool.sol";
 
-contract ERC721LockupPool is
+contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
-    IERC721LockupPool
+    IERC721LockUpPool
 {
     using SafeERC20 for IERC20;
     /// @dev Precision factor for calculations
@@ -26,7 +26,7 @@ contract ERC721LockupPool is
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
 
-    LockupPool public pool;
+    LockUpPool public pool;
 
     constructor(
         address stakeToken,
@@ -34,23 +34,23 @@ contract ERC721LockupPool is
         uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
-        uint256 unstakeLockupTime,
-        uint256 claimLockupTime
+        uint256 unstakeLockUpTime,
+        uint256 claimLockUpTime
     ) Ownable(msg.sender) {
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
-        // Ensure the Lockup periods are valid
-        if (unstakeLockupTime > poolEndTime || claimLockupTime > poolEndTime)
-            revert InvalidLockupTime();
+        // Ensure the LockUp periods are valid
+        if (unstakeLockUpTime > poolEndTime || claimLockUpTime > poolEndTime)
+            revert InvalidLockUpTime();
 
         pool.stakeToken = IERC721(stakeToken);
         pool.rewardToken = IERC20(rewardToken);
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.unstakeLockupTime = unstakeLockupTime;
-        pool.claimLockupTime = claimLockupTime;
+        pool.unstakeLockUpTime = unstakeLockUpTime;
+        pool.claimLockUpTime = claimLockUpTime;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastUpdateTimestamp = pool.startTime;
     }
@@ -142,9 +142,9 @@ contract ERC721LockupPool is
      * @dev See {IERC721BasePool-claim}.
      */
     function claim() external nonReentrant {
-        // Check if the current timestamp is before the claim Lockup time
-        if (block.timestamp < pool.claimLockupTime)
-            revert TokensInLockup(block.timestamp, pool.claimLockupTime);
+        // Check if the current timestamp is before the claim LockUp time
+        if (block.timestamp < pool.claimLockUpTime)
+            revert TokensInLockUp(block.timestamp, pool.claimLockUpTime);
 
         // Update the pool
         _updatePool();

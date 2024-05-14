@@ -5,7 +5,7 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721BasePool} from "./IERC721BasePool.sol";
 
-interface IERC721NoLockupPool is IERC721BasePool{
+interface IERC721NoLockUpPool is IERC721BasePool{
 
     /**
      * @notice Storage for a user's staking information

@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 import {IBaseFactory} from "./IBaseFactory.sol";
 
-interface INoLockupFactory is IBaseFactory {
+interface INoLockUpFactory is IBaseFactory {
     
     struct DeploymentData {
         address stakeToken;

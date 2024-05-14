@@ -43,7 +43,7 @@ contract draftERC721PenaltyFeepPool is
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
-        // Ensure the Lockup periods are valid
+        // Ensure the LockUp periods are valid
         if (poolEndTime - poolStartTime > penaltyPeriod)
             revert InvalidPenaltyPeriod();
 
@@ -146,9 +146,9 @@ contract draftERC721PenaltyFeepPool is
     function claim() external nonReentrant {
         // Get user information
         UserInfo storage user = userInfo[msg.sender];
-        // Check if the current timestamp is before the claim Lockup time
+        // Check if the current timestamp is before the claim LockUp time
         if (block.timestamp < user.penaltyEndTime)
-            revert ClaimInLockup(block.timestamp, user.penaltyEndTime);
+            revert ClaimInLockUp(block.timestamp, user.penaltyEndTime);
         // Update the pool
         _updatePool();
         uint256 amount = user.amount;

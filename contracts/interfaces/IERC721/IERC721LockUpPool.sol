@@ -5,7 +5,7 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721BasePool} from "./IERC721BasePool.sol";
 
-interface IERC721LockupPool is IERC721BasePool{
+interface IERC721LockUpPool is IERC721BasePool{
 
     /**
      * @notice Storage for a user's staking information
@@ -27,8 +27,8 @@ interface IERC721LockupPool is IERC721BasePool{
      * @dev rewardToken The address of the ERC20 reward token
      * @dev startTime The start time of the pool
      * @dev endTime The end time of the pool
-     * @dev unstakeLockupTime The Lockup time (in unixtimestamp) before unstaking
-     * @dev claimLockupTime The Lockup time (in unixtimestamp) before claiming rewards
+     * @dev unstakeLockUpTime The LockUp time (in unixtimestamp) before unstaking
+     * @dev claimLockUpTime The LockUp time (in unixtimestamp) before claiming rewards
      * @dev rewardTokenPerSecond The reward distribution rate per second
      * @dev totalStaked: Total tokens staked
      * @dev totalClaimed: Total rewards claimed
@@ -36,13 +36,13 @@ interface IERC721LockupPool is IERC721BasePool{
      * @dev accRewardPerShare: Accumulated rewards per staked token
      * @dev stakedTokens: Mapping tokenIds to owner addresses
      */
-    struct LockupPool {
+    struct LockUpPool {
         IERC721 stakeToken;
         IERC20 rewardToken;
         uint256 startTime;
         uint256 endTime;
-        uint256 unstakeLockupTime; // Lockup period for unstaking
-        uint256 claimLockupTime; // Lockup period for claiming rewards
+        uint256 unstakeLockUpTime; // LockUp period for unstaking
+        uint256 claimLockUpTime; // LockUp period for claiming rewards
         uint256 rewardTokenPerSecond;
         uint256 totalStaked;
         uint256 totalClaimed;
@@ -54,11 +54,11 @@ interface IERC721LockupPool is IERC721BasePool{
     /**
      *  ERROR MESSAGES
      */
-    /// @dev Error to indicate that tokens are still in Lockup and cannot be accessed
+    /// @dev Error to indicate that tokens are still in LockUp and cannot be accessed
     /// @param currentTime The current timestamp
     /// @param unlockTime The timestamp when the tokens will be unlocked
-    error TokensInLockup(uint256 currentTime, uint256 unlockTime);
+    error TokensInLockUp(uint256 currentTime, uint256 unlockTime);
 
-    /// @dev Error to indicate an invalid Lockup time for unstaking or claiming rewards
-    error InvalidLockupTime();
+    /// @dev Error to indicate an invalid LockUp time for unstaking or claiming rewards
+    error InvalidLockUpTime();
 }

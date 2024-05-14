@@ -1,5 +1,5 @@
 /*
-ERC20LockupFactory
+ERC20LockUpFactory
 SPDX-License-Identifier: MIT
 */
 

@@ -1,5 +1,5 @@
 /*
-ERC20LockupFactory
+ERC20LockUpFactory
 SPDX-License-Identifier: MIT
 */
 
@@ -10,7 +10,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockupStakingFactory
+/// @title ERC20PenaltyFeeStakingFactory
 /// @notice A smart contract for deploying ERC20 staking pools with penalty fees.
 /// @author Ayooluwa Akindeko, Soramitsu team
 contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {

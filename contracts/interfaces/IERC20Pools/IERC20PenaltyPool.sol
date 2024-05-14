@@ -30,10 +30,10 @@ interface IERC20PenaltyPool is IBasePoolERC20 {
     /**
      *  ERROR MESSAGES
      */
-    /// @dev Error to indicate that tokens are still in Lockup and cannot be claimed
+    /// @dev Error to indicate that tokens are still in LockUp and cannot be claimed
     /// @param currentTime The current timestamp
     /// @param unlockTime The timestamp when the tokens will be unlocked for claim
-    error ClaimInLockup(uint256 currentTime, uint256 unlockTime);
+    error ClaimInLockUp(uint256 currentTime, uint256 unlockTime);
     /// @dev Error to indicate an invalid penalty duration for unstaking
     error InvalidPenaltyPeriod();
     /// @dev Error to indicate that the caller is not the admin
