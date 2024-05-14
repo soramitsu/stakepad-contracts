@@ -1,0 +1,19 @@
+name: Codespell checkup
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Run CodeSpell
+      uses: codespell-project/actions-codespell@v2.0
+      with:
+        check_filenames: true
+        skip: package-lock.json,*.pdf
