@@ -13,7 +13,7 @@ interface IERC20PenaltyPool is IBasePoolERC20 {
         uint256 totalStaked; // Total amount of tokens staked
         uint256 totalClaimed; // Total amount of claimed rewards
         uint256 totalPenalties;
-        uint256 lastRewardTimestamp; // Timestamp of the last reward update
+        uint256 lastUpdateTimestamp; // Timestamp of the last reward update
         uint256 accRewardPerShare; // Accumulated rewards per share
         address adminWallet; // Address of the admin
     }
@@ -45,7 +45,7 @@ interface IERC20PenaltyPool is IBasePoolERC20 {
     
     /**
      * @notice Event to notify when an admin claims accumulated fees
-     * @dev Emmited in 'claim' function
+     * @dev Emitted in 'claim' function
      * @param amount The amount of fees claimed
      */
     event FeeClaim(uint256 amount);

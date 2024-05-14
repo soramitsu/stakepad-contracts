@@ -5,6 +5,7 @@ node_modules
 /cache
 /artifacts
 /ignition/deployments
+/test/gasReport.md
 
 # TypeChain files
 /typechain

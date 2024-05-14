@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20NoLockUpStakingPool} from "../pools/ERC20NoLockUpStakingPool.sol";
+import {ERC20NoLockUpPool} from "../pools/ERC20NoLockUpStakingPool.sol";
 import {IERC20NoLockupFactory} from "../interfaces/IERC20Factories/IERC20NoLockupFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -26,10 +26,10 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
     function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
         Request memory req = requests[id];
-        if (req.requestStatus != Status.APROVED) revert InvalidRequestStatus();
+        if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20NoLockUpStakingPool{
+            new ERC20NoLockUpPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -52,7 +52,7 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
         poolById[id] = newPoolAddress;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
-        ERC20NoLockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC20NoLockUpPool(newPoolAddress).transferOwnership(msg.sender);
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(req.data.rewardToken).safeTransferFrom(
@@ -86,7 +86,7 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
         if (requests.length < id) revert InvalidId();
         Request storage req = requests[id];
         if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
-        req.requestStatus = Status.APROVED;
+        req.requestStatus = Status.APPROVED;
         emit RequestStatusChanged(id, req.requestStatus);
     }
 
@@ -104,7 +104,7 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
         if (msg.sender != req.deployer) revert InvalidCaller();
         if (
             req.requestStatus != Status.CREATED ||
-            req.requestStatus != Status.APROVED
+            req.requestStatus != Status.APPROVED
         ) revert InvalidRequestStatus();
         req.requestStatus = Status.CANCELED;
         emit RequestStatusChanged(id, req.requestStatus);

@@ -8,12 +8,17 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPool {
+contract ERC20NoLockUpPool is
+    ReentrancyGuard,
+    Ownable,
+    IERC20NoLockupPool
+{
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
 
     modifier validPool() {
         if (block.timestamp < pool.startTime) revert PoolNotStarted();
+        if (block.timestamp > pool.endTime) revert PoolHasEnded();
         _;
     }
     ///@dev Public pool variable to access pool data
@@ -24,15 +29,15 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPoo
     /// @notice Constructor to initialize the staking pool with specified parameters
     /// @param stakeToken Address of the ERC20 token to be staked
     /// @param rewardToken Address of the ERC20 token used for rewards
-    /// @param rewardTokenPerSecond Rate of rewards per second
     /// @param poolStartTime Start time of the staking pool
     /// @param poolEndTime End time of the staking pool
+    /// @param rewardTokenPerSecond Rate of rewards per second
     constructor(
         address stakeToken,
         address rewardToken,
-        uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
-        uint256 poolEndTime
+        uint256 poolEndTime,
+        uint256 rewardTokenPerSecond
     ) Ownable(msg.sender) {
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
@@ -40,10 +45,10 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPoo
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
-        pool.rewardTokenPerSecond = rewardTokenPerSecond;
-        pool.lastRewardTimestamp = poolStartTime;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
+        pool.rewardTokenPerSecond = rewardTokenPerSecond;
+        pool.lastUpdateTimestamp = poolStartTime;
     }
 
     /**
@@ -82,7 +87,7 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPoo
         UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
         if (currentAmount < amount)
-            revert InsufficientAmount(currentAmount, amount);
+            revert InsufficientAmount(amount, currentAmount);
         _updatePool();
         uint256 share = pool.accRewardPerShare;
         user.pending +=
@@ -114,15 +119,18 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPoo
                 (amount * pool.accRewardPerShare) /
                 PRECISION_FACTOR;
         }
-        if (pending == 0) revert NothingToClaim();
-        // Transfer pending rewards to the user
-        user.pending = 0;
-        unchecked {
-            user.claimed += pending;
+        if (pending > 0) {
+            // Transfer pending rewards to the user
+            user.pending = 0;
+            unchecked {
+                user.claimed += pending;
+            }
+            pool.totalClaimed += pending;
+            IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
+            emit Claim(msg.sender, pending);
+        } else {
+            revert NothingToClaim();
         }
-        pool.totalClaimed += pending;
-        IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-        emit Claim(msg.sender, pending);
     }
 
     /**
@@ -134,10 +142,10 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPoo
         UserInfo storage user = userInfo[userAddress];
         uint256 share = pool.accRewardPerShare;
         if (
-            block.timestamp > pool.lastRewardTimestamp && pool.totalStaked != 0
+            block.timestamp > pool.lastUpdateTimestamp && pool.totalStaked != 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
-                pool.lastRewardTimestamp,
+                pool.lastUpdateTimestamp,
                 block.timestamp
             );
             uint256 totalNewReward = pool.rewardTokenPerSecond * elapsedPeriod;
@@ -152,24 +160,23 @@ contract ERC20NoLockUpStakingPool is ReentrancyGuard, Ownable, IERC20NoLockupPoo
     }
 
     function _updatePool() internal {
-        if (block.timestamp > pool.lastRewardTimestamp) {
-            if (pool.totalStaked != 0) {
+        uint256 lastTimestamp = pool.lastUpdateTimestamp;
+        uint256 total = pool.totalStaked;
+        // Update accumulated rewards per share if necessary
+        if (block.timestamp > lastTimestamp) {
+            if (total > 0) {
                 uint256 elapsedPeriod = _getMultiplier(
-                    pool.lastRewardTimestamp,
+                    lastTimestamp,
                     block.timestamp
                 );
                 pool.accRewardPerShare +=
                     (pool.rewardTokenPerSecond *
                         PRECISION_FACTOR *
                         elapsedPeriod) /
-                    pool.totalStaked;
+                    total;
             }
-            pool.lastRewardTimestamp = block.timestamp;
-            emit UpdatePool(
-                pool.totalStaked,
-                pool.accRewardPerShare,
-                block.timestamp
-            );
+            pool.lastUpdateTimestamp = block.timestamp;
+            emit UpdatePool(total, pool.accRewardPerShare, block.timestamp);
         }
     }
 
