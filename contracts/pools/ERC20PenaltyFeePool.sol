@@ -9,11 +9,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20PenaltyFeePool is
-    ReentrancyGuard,
-    Ownable,
-    IERC20PenaltyPool
-{
+contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IERC20PenaltyPool {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
     uint256 public constant PENALTY_FEE = 2500;
@@ -30,6 +26,7 @@ contract ERC20PenaltyFeePool is
     }
     modifier validPool() {
         if (block.timestamp < pool.startTime) revert PoolNotStarted();
+        if (block.timestamp > pool.endTime) revert PoolHasEnded();
         _;
     }
 
@@ -50,12 +47,12 @@ contract ERC20PenaltyFeePool is
             revert InvalidPenaltyPeriod();
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
-        pool.rewardTokenPerSecond = rewardTokenPerSecond;
-        pool.lastRewardTimestamp = poolStartTime;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.adminWallet = adminAddress;
         pool.penaltyPeriod = penaltyPeriod;
+        pool.rewardTokenPerSecond = rewardTokenPerSecond;
+        pool.lastUpdateTimestamp = poolStartTime;
+        pool.adminWallet = adminAddress;
     }
 
     /**
@@ -82,7 +79,11 @@ contract ERC20PenaltyFeePool is
             : block.timestamp + pool.penaltyPeriod;
         user.rewardDebt = (user.amount * share) / PRECISION_FACTOR;
         pool.totalStaked += amount;
-        IERC20(pool.stakeToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(pool.stakeToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
         emit Stake(msg.sender, amount);
     }
 
@@ -93,11 +94,14 @@ contract ERC20PenaltyFeePool is
         if (amount == 0) revert InvalidAmount();
         UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
-        if (currentAmount < amount) revert InsufficientAmount(currentAmount, amount);
+        if (currentAmount < amount)
+            revert InsufficientAmount(amount, currentAmount);
         _updatePool();
         uint256 share = pool.accRewardPerShare;
         if (block.timestamp <= user.penaltyEndTime) user.penalized = true;
-        user.pending += ((currentAmount * share) / PRECISION_FACTOR) - user.rewardDebt;
+        user.pending +=
+            ((currentAmount * share) / PRECISION_FACTOR) -
+            user.rewardDebt;
         unchecked {
             user.amount -= amount;
         }
@@ -126,21 +130,24 @@ contract ERC20PenaltyFeePool is
                 (amount * pool.accRewardPerShare) /
                 PRECISION_FACTOR;
         }
-        if (pending == 0) revert NothingToClaim();
-        user.pending = 0;
-        uint256 penalityAmount = _calculatePenalizedAmount(
-            user.penalized,
-            pending
-        );
-        pending -= penalityAmount;
-        if (user.penalized) user.penalized = false;
-        unchecked {
-            user.claimed += pending;
+        if (pending > 0) {
+            user.pending = 0;
+            uint256 penalityAmount = _calculatePenalizedAmount(
+                user.penalized,
+                pending
+            );
+            pending -= penalityAmount;
+            if (user.penalized) user.penalized = false;
+            unchecked {
+                user.claimed += pending;
+            }
+            pool.totalClaimed += pending;
+            pool.totalPenalties += penalityAmount;
+            IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
+            emit Claim(msg.sender, pending);
+        } else {
+            revert NothingToClaim();
         }
-        pool.totalClaimed += pending;
-        pool.totalPenalties += penalityAmount;
-        IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-        emit Claim(msg.sender, pending);
     }
 
     function claimFee() external nonReentrant onlyAdmin {
@@ -158,11 +165,11 @@ contract ERC20PenaltyFeePool is
         uint256 share = pool.accRewardPerShare;
         uint256 pending = user.pending;
         if (
-            block.timestamp > pool.lastRewardTimestamp && pool.totalStaked > 0
+            block.timestamp > pool.lastUpdateTimestamp && pool.totalStaked > 0
         ) {
             uint256 elapsedPeriod = _getMultiplier(
                 block.timestamp,
-                pool.lastRewardTimestamp
+                pool.lastUpdateTimestamp
             );
             uint256 totalNewReward = pool.rewardTokenPerSecond * elapsedPeriod;
             share =
@@ -174,24 +181,23 @@ contract ERC20PenaltyFeePool is
     }
 
     function _updatePool() internal {
-        if (block.timestamp > pool.lastRewardTimestamp) {
-            if (pool.totalStaked != 0) {
+        uint256 lastTimestamp = pool.lastUpdateTimestamp;
+        uint256 total = pool.totalStaked;
+        // Update accumulated rewards per share if necessary
+        if (block.timestamp > lastTimestamp) {
+            if (total > 0) {
                 uint256 elapsedPeriod = _getMultiplier(
-                    block.timestamp,
-                    pool.lastRewardTimestamp
+                    lastTimestamp,
+                    block.timestamp
                 );
                 pool.accRewardPerShare +=
                     (pool.rewardTokenPerSecond *
                         PRECISION_FACTOR *
                         elapsedPeriod) /
-                    pool.totalStaked;
+                    total;
             }
-            pool.lastRewardTimestamp = block.timestamp;
-            emit UpdatePool(
-                pool.totalStaked,
-                pool.accRewardPerShare,
-                block.timestamp
-            );
+            pool.lastUpdateTimestamp = block.timestamp;
+            emit UpdatePool(total, pool.accRewardPerShare, block.timestamp);
         }
     }
 

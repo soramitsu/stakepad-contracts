@@ -6,16 +6,18 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721LockUpPool} from "../../interfaces/IERC721/IERC721LockUpPool.sol";
+import {IERC721PenaltyFeePool} from "../../interfaces/IERC721/IERC721PenaltyFeePool.sol";
 
-contract ERC721LockUpPool is
+contract draftERC721PenaltyFeepPool is
     ReentrancyGuard,
     Ownable,
-    IERC721LockUpPool
+    IERC721PenaltyFeePool
 {
     using SafeERC20 for IERC20;
     /// @dev Precision factor for calculations
     uint256 public constant PRECISION_FACTOR = 10e18;
+    uint256 public constant PENALTY_FEE = 2500;
+    uint256 public constant COLLECTABLE_FEE = 100;
 
     /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
     modifier validPool() {
@@ -26,7 +28,7 @@ contract ERC721LockUpPool is
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
 
-    LockupPool public pool;
+    PenaltyPool public pool;
 
     constructor(
         address stakeToken,
@@ -34,25 +36,25 @@ contract ERC721LockUpPool is
         uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
-        uint256 unstakeLockupTime,
-        uint256 claimLockUpTime
+        uint256 penaltyPeriod,
+        address adminAddress
     ) Ownable(msg.sender) {
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the lockup periods are valid
-        if (unstakeLockupTime > poolEndTime || claimLockUpTime > poolEndTime)
-            revert InvalidLockupTime();
+        if (poolEndTime - poolStartTime > penaltyPeriod)
+            revert InvalidPenaltyPeriod();
 
         pool.stakeToken = IERC721(stakeToken);
         pool.rewardToken = IERC20(rewardToken);
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.unstakeLockupTime = unstakeLockupTime;
-        pool.claimLockupTime = claimLockUpTime;
+        pool.penaltyPeriod = penaltyPeriod;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
-        pool.lastUpdateTimestamp = pool.startTime;
+        pool.lastUpdateTimestamp = poolStartTime;
+        pool.adminWallet = adminAddress;
     }
 
     /**
@@ -142,18 +144,15 @@ contract ERC721LockUpPool is
      * @dev See {IERC721BasePool-claim}.
      */
     function claim() external nonReentrant {
-        // Check if the current timestamp is before the claim lockup time
-        if (block.timestamp < pool.claimLockupTime)
-            revert TokensInLockup(block.timestamp, pool.claimLockupTime);
-
-        // Update the pool
-        _updatePool();
-
         // Get user information
         UserInfo storage user = userInfo[msg.sender];
+        // Check if the current timestamp is before the claim lockup time
+        if (block.timestamp < user.penaltyEndTime)
+            revert ClaimInLockup(block.timestamp, user.penaltyEndTime);
+        // Update the pool
+        _updatePool();
         uint256 amount = user.amount;
         uint256 pending = user.pending;
-
         // Calculate pending rewards
         if (amount > 0) {
             pending +=
@@ -165,12 +164,18 @@ contract ERC721LockUpPool is
                 PRECISION_FACTOR;
         }
         if (pending > 0) {
-            // Transfer pending rewards to the user
             user.pending = 0;
+            uint256 penalityAmount = _calculatePenalizedAmount(
+                user.penalized,
+                pending
+            );
+            pending -= penalityAmount;
+            if (user.penalized) user.penalized = false;
             unchecked {
                 user.claimed += pending;
             }
             pool.totalClaimed += pending;
+            pool.totalPenalties += penalityAmount;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
             emit Claim(msg.sender, pending);
         } else {
@@ -184,6 +189,7 @@ contract ERC721LockUpPool is
         // Get user information
         UserInfo storage user = userInfo[userAddress];
         uint256 share = pool.accRewardPerShare;
+        uint256 pending = user.pending;
         // Update accumulated rewards per share if necessary
         if (
             block.timestamp > pool.lastUpdateTimestamp && pool.totalStaked != 0
@@ -196,10 +202,19 @@ contract ERC721LockUpPool is
             share += (totalNewReward * PRECISION_FACTOR) / pool.totalStaked;
         }
         // Calculate pending rewards
-        return
-            user.pending +
-            ((user.amount * share) / PRECISION_FACTOR) -
-            user.rewardDebt;
+        pending += ((user.amount * share) / PRECISION_FACTOR) - user.rewardDebt;
+        return pending - _calculatePenalizedAmount(user.penalized, pending);
+    }
+
+    function _calculatePenalizedAmount(
+        bool penalized,
+        uint256 _amountToPenalize
+    ) internal pure returns (uint256) {
+        if (penalized) {
+            return (_amountToPenalize * PENALTY_FEE) / 10000;
+        }
+        // Flat 1% penalty fee in basis points if the penalty period has already ended
+        return (_amountToPenalize * COLLECTABLE_FEE) / 10000;
     }
 
     function _updatePool() internal {

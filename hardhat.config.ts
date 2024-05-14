@@ -1,6 +1,11 @@
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
+import '@nomicfoundation/hardhat-verify';
+import 'hardhat-gas-reporter';
+import '@typechain/hardhat';
+import '@nomicfoundation/hardhat-network-helpers';
+import '@nomicfoundation/hardhat-ethers';
+import '@nomicfoundation/hardhat-chai-matchers';
 
 dotenv.config();
 
@@ -41,7 +46,12 @@ const config: HardhatUserConfig = {
   gasReporter: {
     enabled: true,
     currency: 'USD',
-    gasPrice: 50,
+    L1: "polygon",
+    L1Etherscan: process.env.AMOY_API_KEY as string,
+    reportFormat: "markdown",
+    outputFile: "./test/gasReport.md",
+    forceTerminalOutput: true,
+    forceTerminalOutputFormat: "terminal"
   },
   typechain: {
     outDir: './typechain',

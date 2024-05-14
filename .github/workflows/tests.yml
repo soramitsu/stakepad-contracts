@@ -25,3 +25,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm run test
+      - name: Markdown report
+        run: cat "./test/gasReport.md" > $GITHUB_STEP_SUMMARY

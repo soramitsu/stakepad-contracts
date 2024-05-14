@@ -5,7 +5,7 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721BasePool} from "./IERC721BasePool.sol";
 
-interface IERC721LockUpPool is IERC721BasePool{
+interface IERC721PenaltyFeePool is IERC721BasePool{
 
     /**
      * @notice Storage for a user's staking information
@@ -19,6 +19,8 @@ interface IERC721LockUpPool is IERC721BasePool{
         uint256 claimed;
         uint256 rewardDebt;
         uint256 pending;
+        uint256 penaltyEndTime;
+        bool penalized;
     }
 
     /**
@@ -27,8 +29,6 @@ interface IERC721LockUpPool is IERC721BasePool{
      * @dev rewardToken The address of the ERC20 reward token
      * @dev startTime The start time of the pool
      * @dev endTime The end time of the pool
-     * @dev unstakeLockupTime The lockup time (in unixtimestamp) before unstaking
-     * @dev claimLockupTime The lockup time (in unixtimestamp) before claiming rewards
      * @dev rewardTokenPerSecond The reward distribution rate per second
      * @dev totalStaked: Total tokens staked
      * @dev totalClaimed: Total rewards claimed
@@ -36,29 +36,42 @@ interface IERC721LockUpPool is IERC721BasePool{
      * @dev accRewardPerShare: Accumulated rewards per staked token
      * @dev stakedTokens: Mapping tokenIds to owner addresses
      */
-    struct LockupPool {
+    struct PenaltyPool {
         IERC721 stakeToken;
         IERC20 rewardToken;
         uint256 startTime;
         uint256 endTime;
-        uint256 unstakeLockupTime; // Lockup period for unstaking
-        uint256 claimLockupTime; // Lockup period for claiming rewards
+        uint256 penaltyPeriod;
         uint256 rewardTokenPerSecond;
         uint256 totalStaked;
         uint256 totalClaimed;
+        uint256 totalPenalties;
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
+        address adminWallet;
         mapping(uint256 => address) stakedTokens;
     }
     
     /**
      *  ERROR MESSAGES
      */
-    /// @dev Error to indicate that tokens are still in lockup and cannot be accessed
+    /// @dev Error to indicate that tokens are still in lockup and cannot be claimed
     /// @param currentTime The current timestamp
-    /// @param unlockTime The timestamp when the tokens will be unlocked
-    error TokensInLockup(uint256 currentTime, uint256 unlockTime);
+    /// @param unlockTime The timestamp when the tokens will be unlocked for claim
+    error ClaimInLockup(uint256 currentTime, uint256 unlockTime);
+    /// @dev Error to indicate an invalid penalty duration for unstaking
+    error InvalidPenaltyPeriod();
+    /// @dev Error to indicate that the caller is not the admin
+    error NotAdmin();
 
-    /// @dev Error to indicate an invalid lockup time for unstaking or claiming rewards
-    error InvalidLockupTime();
+    /**
+     *  EVENTS
+     */
+    
+    /**
+     * @notice Event to notify when an admin claims accumulated fees
+     * @dev Emitted in 'claim' function
+     * @param amount The amount of fees claimed
+     */
+    event FeeClaim(uint256 amount);
 }

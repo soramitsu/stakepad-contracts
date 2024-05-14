@@ -25,6 +25,9 @@ interface IBasePoolERC20 {
     /// @dev Error to indicate that the staking pool has not started yet
     error PoolNotStarted();
 
+    /// @dev Error to indicate that the staking pool has already ended
+    error PoolHasEnded();
+
     /**
      *  EVENTS
      */

@@ -25,9 +25,11 @@ interface IERC721BasePool {
     error InvalidAmount();
 
     /**
-     * @notice Error emitted when attempting to unstake more tokens than the user has staked.
+     * @dev Error to indicate insufficient amount of tokens
+     * @param reqAmount The amount of tokens that is required
+     * @param currentAmount The current amount of tokens
      */
-    error NotEnoughTokens();
+    error InsufficientAmount(uint256 reqAmount, uint256 currentAmount);
 
     /**
      * @notice Error emitted when a user other than the owner of a token attempts to unstake it.
@@ -45,16 +47,11 @@ interface IERC721BasePool {
     error PoolNotStarted();
 
     /**
-     * @notice Error emitted when attempting an operation while pool is not active.
+     * @notice Error emitted when attempting an operation after the pool has ended.
      */
-    error PoolNotActive();
-    /**
-     * @notice Error emitted when attempting an operation while pool is not active.
-     */
-    error NotAdmin();
-
+    error PoolHasEnded();
+    
     // **Events**
-
     /**
      * @notice Event emitted when tokens are staked into the pool.
      * @param user The address of the user who staked the tokens.
@@ -106,4 +103,13 @@ interface IERC721BasePool {
      * @notice Allows users to claim their pending rewards.
      */
     function claim() external;
+
+    /**
+     * @notice Function to calculate pending rewards for a user
+     * @param userAddress Address of the user
+     * @return pending rewards
+     */
+    function pendingRewards(
+        address userAddress
+    ) external view returns (uint256);
 }

@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20LockUpStakingPool} from "../pools/ERC20LockUpStakingPool.sol";
+import {ERC20LockupPool} from "../pools/ERC20LockUpStakingPool.sol";
 import {IERC20LockUpFactory} from "../interfaces/IERC20Factories/IERC20LockUpFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -29,7 +29,7 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactory {
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20LockUpStakingPool{
+            new ERC20LockupPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -42,11 +42,11 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactory {
             }(
                 req.data.stakeToken,
                 req.data.rewardToken,
-                req.data.rewardPerSecond,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
                 req.data.unstakeLockupTime,
-                req.data.claimLockupTime
+                req.data.claimLockupTime,
+                req.data.rewardPerSecond
             )
         );
         stakingPools.push(newPoolAddress);
@@ -54,7 +54,7 @@ contract ERC20LockUpStakingFactory is Ownable, IERC20LockUpFactory {
         poolById[id] = newPoolAddress;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
-        ERC20LockUpStakingPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC20LockupPool(newPoolAddress).transferOwnership(msg.sender);
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(req.data.rewardToken).safeTransferFrom(
