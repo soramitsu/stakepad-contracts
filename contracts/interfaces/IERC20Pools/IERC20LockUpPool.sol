@@ -20,7 +20,7 @@ interface IERC20LockupPool is IBasePoolERC20 {
         uint256 rewardTokenPerSecond; // Rate of rewards per second
         uint256 totalStaked; // Total amount of tokens staked
         uint256 totalClaimed; // Total amount of claimed rewards
-        uint256 lastRewardTimestamp; // Timestamp of the last reward update
+        uint256 lastUpdateTimestamp; // Timestamp of the last reward update
         uint256 accRewardPerShare; // Accumulated rewards per share
     }
 

@@ -6,7 +6,7 @@ interface IERC20BaseFactory {
         UNKNOWN,
         CREATED,
         DENIED,
-        APROVED,
+        APPROVED,
         DEPLOYED,
         CANCELED
     }

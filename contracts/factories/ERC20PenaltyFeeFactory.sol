@@ -26,7 +26,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IERC20PenaltyFeeFactory {
      function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
         Request memory req = requests[id];
-        if (req.requestStatus != Status.APROVED) revert InvalidRequestStatus();
+        if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.deployer) revert InvalidCaller();
         newPoolAddress = address(
             new ERC20PenaltyFeePool{
@@ -77,7 +77,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IERC20PenaltyFeeFactory {
         if (requests.length < id) revert InvalidId();
         Request storage req = requests[id];
         if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
-        req.requestStatus = Status.APROVED;
+        req.requestStatus = Status.APPROVED;
         emit RequestStatusChanged(id, req.requestStatus);
     }
 
@@ -95,7 +95,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IERC20PenaltyFeeFactory {
         if (msg.sender != req.deployer) revert InvalidCaller();
         if (
             req.requestStatus != Status.CREATED ||
-            req.requestStatus != Status.APROVED
+            req.requestStatus != Status.APPROVED
         ) revert InvalidRequestStatus();
         req.requestStatus = Status.CANCELED;
         emit RequestStatusChanged(id, req.requestStatus);
