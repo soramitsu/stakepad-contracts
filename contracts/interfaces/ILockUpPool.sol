@@ -3,9 +3,9 @@ pragma solidity 0.8.25;
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC721BasePool} from "./IERC721BasePool.sol";
 
-interface IERC721LockUpPool is IERC721BasePool{
+
+interface ILockUpPoolStorage {
 
     /**
      * @notice Storage for a user's staking information
@@ -23,8 +23,8 @@ interface IERC721LockUpPool is IERC721BasePool{
 
     /**
      * @notice Defines the pool state and config parameters
-     * @dev stakeToken The address of the ERC721 staking token
-     * @dev rewardToken The address of the ERC20 reward token
+     * @dev stakeToken The address of the staking token
+     * @dev rewardToken The address of the reward token
      * @dev startTime The start time of the pool
      * @dev endTime The end time of the pool
      * @dev unstakeLockUpTime The LockUp time (in unixtimestamp) before unstaking

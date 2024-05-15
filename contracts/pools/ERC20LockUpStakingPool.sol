@@ -3,14 +3,15 @@ pragma solidity 0.8.25;
 
 // Import OpenZeppelin contracts for ERC20 token interaction, reentrancy protection, safe token transfers, and ownership management.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20LockUpPool} from "../interfaces/IERC20Pools/IERC20LockUpPool.sol";
+import {IPoolERC20} from "../interfaces/IERC20Pool.sol";
+import {ILockUpPoolStorage} from "../interfaces/ILockUpPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title ERC20LockUpPool
 /// @notice A smart contract for staking ERC20 tokens and earning rewards over a specified period.
-contract ERC20LockUpPool is ReentrancyGuard, Ownable, IERC20LockUpPool {
+contract ERC20LockUpPool is ReentrancyGuard, Ownable, IPoolERC20, ILockUpPoolStorage {
     using SafeERC20 for IERC20;
 
     /// @dev Precision factor for calculations

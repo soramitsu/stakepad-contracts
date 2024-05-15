@@ -6,12 +6,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721LockUpPool} from "../../interfaces/IERC721/IERC721LockUpPool.sol";
+import {IPoolERC721} from "../../interfaces/IERC721Pool.sol";
+import {ILockUpPoolStorage} from "../../interfaces/ILockUpPool.sol";
 
 contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
-    IERC721LockUpPool
+    IPoolERC721,
+    ILockUpPoolStorage
 {
     using SafeERC20 for IERC20;
     /// @dev Precision factor for calculations

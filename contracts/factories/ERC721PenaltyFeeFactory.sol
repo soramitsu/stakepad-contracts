@@ -17,7 +17,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
-    Request[] public requests;
+    PenaltyFeeRequest[] public requests;
     mapping(uint256 id => address pool) public poolById;
 
     constructor() Ownable(msg.sender) {}
@@ -25,9 +25,9 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     /// @notice Function allows users to deploy the penaltyFee staking pool with specified parameters
      function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
-        Request memory req = requests[id];
-        if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
-        if (msg.sender != req.deployer) revert InvalidCaller();
+        PenaltyFeeRequest memory req = requests[id];
+        if (req.info.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
+        if (msg.sender != req.info.deployer) revert InvalidCaller();
         newPoolAddress = address(
             new draftERC721PenaltyFeepPool{
                 salt: keccak256(
@@ -54,14 +54,17 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 
-    function requestDeployment(DeploymentData calldata data) external {
+    function requestDeployment(bytes32 ipfsHash, DeploymentData calldata data) external {
         if (data.stakeToken == address(0) || data.rewardToken == address(0))
             revert InvalidTokenAddress();
         if (data.rewardPerSecond == 0) revert InvalidRewardRate();
         requests.push(
-            Request({
-                deployer: msg.sender,
-                requestStatus: Status.CREATED,
+            PenaltyFeeRequest({
+                info: RequestInfo({
+                    ipfsHash: ipfsHash,
+                    deployer: msg.sender,
+                    requestStatus: Status.CREATED
+                }),
                 data: data
             })
         );
@@ -75,33 +78,33 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
 
     function approveRequest(uint256 id) external onlyOwner {
         if (requests.length < id) revert InvalidId();
-        Request storage req = requests[id];
-        if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
-        req.requestStatus = Status.APPROVED;
-        emit RequestStatusChanged(id, req.requestStatus);
+        PenaltyFeeRequest storage req = requests[id];
+        if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
+        req.info.requestStatus = Status.APPROVED;
+        emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
     function denyRequest(uint256 id) external onlyOwner {
         if (requests.length < id) revert InvalidId();
-        Request storage req = requests[id];
-        if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
-        req.requestStatus = Status.DENIED;
-        emit RequestStatusChanged(id, req.requestStatus);
+        PenaltyFeeRequest storage req = requests[id];
+        if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
+        req.info.requestStatus = Status.DENIED;
+        emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
     function cancelRequest(uint256 id) external {
         if (requests.length < id) revert InvalidId();
-        Request storage req = requests[id];
-        if (msg.sender != req.deployer) revert InvalidCaller();
+        PenaltyFeeRequest storage req = requests[id];
+        if (msg.sender != req.info.deployer) revert InvalidCaller();
         if (
-            req.requestStatus != Status.CREATED ||
-            req.requestStatus != Status.APPROVED
+            req.info.requestStatus != Status.CREATED ||
+            req.info.requestStatus != Status.APPROVED
         ) revert InvalidRequestStatus();
-        req.requestStatus = Status.CANCELED;
-        emit RequestStatusChanged(id, req.requestStatus);
+        req.info.requestStatus = Status.CANCELED;
+        emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
-    function getRequests() external view returns (Request[] memory reqs) {
+    function getRequests() external view returns (PenaltyFeeRequest[] memory reqs) {
         reqs = requests;
     }
 
