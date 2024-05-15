@@ -34,11 +34,10 @@ interface IERC721PenaltyFeePool is IERC721BasePool{
      * @dev totalClaimed: Total rewards claimed
      * @dev lastUpdateTimestamp: The timestamp of the last update
      * @dev accRewardPerShare: Accumulated rewards per staked token
-     * @dev stakedTokens: Mapping tokenIds to owner addresses
      */
     struct PenaltyPool {
-        IERC721 stakeToken;
-        IERC20 rewardToken;
+        address stakeToken;
+        address rewardToken;
         uint256 startTime;
         uint256 endTime;
         uint256 penaltyPeriod;
@@ -49,7 +48,6 @@ interface IERC721PenaltyFeePool is IERC721BasePool{
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
         address adminWallet;
-        mapping(uint256 => address) stakedTokens;
     }
     
     /**

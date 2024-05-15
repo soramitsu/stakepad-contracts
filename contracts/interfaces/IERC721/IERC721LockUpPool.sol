@@ -34,11 +34,10 @@ interface IERC721LockUpPool is IERC721BasePool{
      * @dev totalClaimed: Total rewards claimed
      * @dev lastUpdateTimestamp: The timestamp of the last update
      * @dev accRewardPerShare: Accumulated rewards per staked token
-     * @dev stakedTokens: Mapping tokenIds to owner addresses
      */
     struct LockUpPool {
-        IERC721 stakeToken;
-        IERC20 rewardToken;
+        address stakeToken;
+        address rewardToken;
         uint256 startTime;
         uint256 endTime;
         uint256 unstakeLockUpTime; // LockUp period for unstaking
@@ -48,7 +47,6 @@ interface IERC721LockUpPool is IERC721BasePool{
         uint256 totalClaimed;
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
-        mapping(uint256 => address) stakedTokens;
     }
     
     /**

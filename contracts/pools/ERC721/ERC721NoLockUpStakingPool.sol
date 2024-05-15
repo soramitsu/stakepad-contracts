@@ -25,6 +25,8 @@ contract ERC721NoLockUpPool is
     }
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
+    ///@dev stakedTokens: Mapping tokenIds to owner addresses
+    mapping(uint256 => address) stakedTokens;
 
     Pool public pool;
 
@@ -40,8 +42,8 @@ contract ERC721NoLockUpPool is
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
 
-        pool.stakeToken = IERC721(stakeToken);
-        pool.rewardToken = IERC20(rewardToken);
+        pool.stakeToken = stakeToken;
+        pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
@@ -77,12 +79,12 @@ contract ERC721NoLockUpPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < amount; i++) {
-            pool.stakedTokens[tokenIds[i]] = msg.sender;
+            stakedTokens[tokenIds[i]] = msg.sender;
         }
 
         // Interactions: Transfer the tokens after state changes
         for (uint256 i = 0; i < amount; i++) {
-            pool.stakeToken.safeTransferFrom(
+            IERC721(pool.stakeToken).safeTransferFrom(
                 msg.sender,
                 address(this),
                 tokenIds[i]
@@ -115,14 +117,14 @@ contract ERC721NoLockUpPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < length; i++) {
-            if (pool.stakedTokens[tokenIds[i]] != msg.sender)
+            if (stakedTokens[tokenIds[i]] != msg.sender)
                 revert NotStaker();
-            delete pool.stakedTokens[tokenIds[i]];
+            delete stakedTokens[tokenIds[i]];
         }
 
         // Interactions: Transfer the tokens after state changes
         for (uint256 i = 0; i < length; i++) {
-            pool.stakeToken.safeTransferFrom(
+            IERC721(pool.stakeToken).safeTransferFrom(
                 address(this),
                 msg.sender,
                 tokenIds[i]
