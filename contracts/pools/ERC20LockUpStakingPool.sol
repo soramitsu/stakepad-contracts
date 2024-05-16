@@ -3,14 +3,15 @@ pragma solidity 0.8.25;
 
 // Import OpenZeppelin contracts for ERC20 token interaction, reentrancy protection, safe token transfers, and ownership management.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20LockupPool} from "../interfaces/IERC20Pools/IERC20LockUpPool.sol";
+import {IPoolERC20} from "../interfaces/IERC20Pool.sol";
+import {ILockUpPoolStorage} from "../interfaces/ILockUpPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title ERC20LockupPool
+/// @title ERC20LockUpPool
 /// @notice A smart contract for staking ERC20 tokens and earning rewards over a specified period.
-contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
+contract ERC20LockUpPool is ReentrancyGuard, Ownable, IPoolERC20, ILockUpPoolStorage {
     using SafeERC20 for IERC20;
 
     /// @dev Precision factor for calculations
@@ -33,33 +34,33 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
     /// @param rewardToken Address of the ERC20 token used for rewards
     /// @param poolStartTime Start time of the staking pool
     /// @param poolEndTime End time of the staking pool
-    /// @param unstakeLockup Lockup period for unstaking
-    /// @param claimLockup Lockup period for claiming rewards
+    /// @param unstakeLockUp LockUp period for unstaking
+    /// @param claimLockUp LockUp period for claiming rewards
     /// @param rewardTokenPerSecond Rate of rewards per second
     constructor(
         address stakeToken,
         address rewardToken,
         uint256 poolStartTime,
         uint256 poolEndTime,
-        uint256 unstakeLockup,
-        uint256 claimLockup,
+        uint256 unstakeLockUp,
+        uint256 claimLockUp,
         uint256 rewardTokenPerSecond
     ) Ownable(msg.sender) {
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
-        // Ensure the lockup periods are valid
-        if (unstakeLockup > poolEndTime || claimLockup > poolEndTime)
-            revert InvalidLockupTime();
+        // Ensure the LockUp periods are valid
+        if (unstakeLockUp > poolEndTime || claimLockUp > poolEndTime)
+            revert InvalidLockUpTime();
 
         // Initialize pool parameters
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.unstakeLockupTime = unstakeLockup;
-        pool.claimLockupTime = claimLockup;
+        pool.unstakeLockUpTime = unstakeLockUp;
+        pool.claimLockUpTime = claimLockUp;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastUpdateTimestamp = poolStartTime;
     }
@@ -105,9 +106,9 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
      */
     function unstake(uint256 amount) external nonReentrant {
         if (amount == 0) revert InvalidAmount();
-        // Check if the current timestamp is before the unstake lockup time
-        if (block.timestamp < pool.unstakeLockupTime)
-            revert TokensInLockup(block.timestamp, pool.unstakeLockupTime);
+        // Check if the current timestamp is before the unstake LockUp time
+        if (block.timestamp < pool.unstakeLockUpTime)
+            revert TokensInLockUp(block.timestamp, pool.unstakeLockUpTime);
         // Get user information
         UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
@@ -139,9 +140,9 @@ contract ERC20LockupPool is ReentrancyGuard, Ownable, IERC20LockupPool {
      * @dev See {IBasePoolERC20-claim}.
      */
     function claim() external nonReentrant {
-        // Check if the current timestamp is before the claim lockup time
-        if (block.timestamp < pool.claimLockupTime)
-            revert TokensInLockup(block.timestamp, pool.claimLockupTime);
+        // Check if the current timestamp is before the claim LockUp time
+        if (block.timestamp < pool.claimLockUpTime)
+            revert TokensInLockUp(block.timestamp, pool.claimLockUpTime);
         // Update the pool
         _updatePool();
         // Get user information

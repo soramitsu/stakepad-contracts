@@ -4,32 +4,33 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20NoLockUpPool} from "../pools/ERC20NoLockUpStakingPool.sol";
-import {IERC20NoLockupFactory} from "../interfaces/IERC20Factories/IERC20NoLockupFactory.sol";
+import {ERC721LockUpPool} from "../pools/ERC721/ERC721LockUpStakingPool.sol";
+import {ILockUpFactory} from "../interfaces/IFactories/ILockUpFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title ERC20LockUpStakingFactory
-/// @notice A smart contract for deploying ERC20 regular staking pools.
+/// @title ERC721LockUpStakingFactory
+/// @notice A smart contract for deploying ERC721 LockUp staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
+contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
-    Request[] public requests;
+    LockUpRequest[] public requests;
     mapping(uint256 id => address pool) public poolById;
 
     constructor() Ownable(msg.sender) {}
 
-    /// @notice Function allows users to deploy the lockup staking pool with specified parameters
+    /// @notice Function allows users to deploy the LockUp staking pool with specified parameters
     function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
-        Request memory req = requests[id];
-        if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
-        if (msg.sender != req.deployer) revert InvalidCaller();
+        LockUpRequest memory req = requests[id];
+        if (req.info.requestStatus != Status.APPROVED)
+            revert InvalidRequestStatus();
+        if (msg.sender != req.info.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC20NoLockUpPool{
+            new ERC721LockUpPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -42,17 +43,19 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
             }(
                 req.data.stakeToken,
                 req.data.rewardToken,
-                req.data.rewardPerSecond,
                 req.data.poolStartTime,
-                req.data.poolEndTime
+                req.data.poolEndTime,
+                req.data.unstakeLockUpTime,
+                req.data.claimLockUpTime,
+                req.data.rewardPerSecond
             )
         );
         stakingPools.push(newPoolAddress);
-        requests[id].requestStatus = Status.DEPLOYED;
+        requests[id].info.requestStatus = Status.DEPLOYED;
         poolById[id] = newPoolAddress;
         uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
             req.data.rewardPerSecond;
-        ERC20NoLockUpPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC721LockUpPool(newPoolAddress).transferOwnership(msg.sender);
         // Transfer reward tokens from the owner to the contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(req.data.rewardToken).safeTransferFrom(
@@ -63,14 +66,20 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 
-    function requestDeployment(DeploymentData calldata data) external {
+    function requestDeployment(
+        bytes32 ipfsHash,
+        DeploymentData calldata data
+    ) external {
         if (data.stakeToken == address(0) || data.rewardToken == address(0))
             revert InvalidTokenAddress();
         if (data.rewardPerSecond == 0) revert InvalidRewardRate();
         requests.push(
-            Request({
-                deployer: msg.sender,
-                requestStatus: Status.CREATED,
+            LockUpRequest({
+                info: RequestInfo({
+                    ipfsHash: ipfsHash,
+                    deployer: msg.sender,
+                    requestStatus: Status.CREATED
+                }),
                 data: data
             })
         );
@@ -84,33 +93,33 @@ contract ERC20NoLockUpStakingFactory is Ownable, IERC20NoLockupFactory {
 
     function approveRequest(uint256 id) external onlyOwner {
         if (requests.length < id) revert InvalidId();
-        Request storage req = requests[id];
-        if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
-        req.requestStatus = Status.APPROVED;
-        emit RequestStatusChanged(id, req.requestStatus);
+        LockUpRequest storage req = requests[id];
+        if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
+        req.info.requestStatus = Status.APPROVED;
+        emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
     function denyRequest(uint256 id) external onlyOwner {
         if (requests.length < id) revert InvalidId();
-        Request storage req = requests[id];
-        if (req.requestStatus != Status.CREATED) revert InvalidRequestStatus();
-        req.requestStatus = Status.DENIED;
-        emit RequestStatusChanged(id, req.requestStatus);
+        LockUpRequest storage req = requests[id];
+        if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
+        req.info.requestStatus = Status.DENIED;
+        emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
     function cancelRequest(uint256 id) external {
         if (requests.length < id) revert InvalidId();
-        Request storage req = requests[id];
-        if (msg.sender != req.deployer) revert InvalidCaller();
+        LockUpRequest storage req = requests[id];
+        if (msg.sender != req.info.deployer) revert InvalidCaller();
         if (
-            req.requestStatus != Status.CREATED ||
-            req.requestStatus != Status.APPROVED
+            req.info.requestStatus != Status.CREATED &&
+            req.info.requestStatus != Status.APPROVED
         ) revert InvalidRequestStatus();
-        req.requestStatus = Status.CANCELED;
-        emit RequestStatusChanged(id, req.requestStatus);
+        req.info.requestStatus = Status.CANCELED;
+        emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
-    function getRequests() external view returns (Request[] memory reqs) {
+    function getRequests() external view returns (LockUpRequest[] memory reqs) {
         reqs = requests;
     }
 

@@ -6,12 +6,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721LockUpPool} from "../../interfaces/IERC721/IERC721LockUpPool.sol";
+import {IPoolERC721} from "../../interfaces/IERC721Pool.sol";
+import {ILockUpPoolStorage} from "../../interfaces/ILockUpPool.sol";
 
 contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
-    IERC721LockUpPool
+    IPoolERC721,
+    ILockUpPoolStorage
 {
     using SafeERC20 for IERC20;
     /// @dev Precision factor for calculations
@@ -25,8 +27,10 @@ contract ERC721LockUpPool is
     }
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
+    ///@dev stakedTokens: Mapping tokenIds to owner addresses
+    mapping(uint256 => address) stakedTokens;
 
-    LockupPool public pool;
+    LockUpPool public pool;
 
     constructor(
         address stakeToken,
@@ -34,23 +38,23 @@ contract ERC721LockUpPool is
         uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
-        uint256 unstakeLockupTime,
+        uint256 unstakeLockUpTime,
         uint256 claimLockUpTime
     ) Ownable(msg.sender) {
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
-        // Ensure the lockup periods are valid
-        if (unstakeLockupTime > poolEndTime || claimLockUpTime > poolEndTime)
-            revert InvalidLockupTime();
+        // Ensure the LockUp periods are valid
+        if (unstakeLockUpTime > poolEndTime || claimLockUpTime > poolEndTime)
+            revert InvalidLockUpTime();
 
-        pool.stakeToken = IERC721(stakeToken);
-        pool.rewardToken = IERC20(rewardToken);
+        pool.stakeToken = stakeToken;
+        pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.unstakeLockupTime = unstakeLockupTime;
-        pool.claimLockupTime = claimLockUpTime;
+        pool.unstakeLockUpTime = unstakeLockUpTime;
+        pool.claimLockUpTime = claimLockUpTime;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastUpdateTimestamp = pool.startTime;
     }
@@ -84,12 +88,12 @@ contract ERC721LockUpPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < amount; i++) {
-            pool.stakedTokens[tokenIds[i]] = msg.sender;
+            stakedTokens[tokenIds[i]] = msg.sender;
         }
 
         // Interactions: Transfer the tokens after state changes
         for (uint256 i = 0; i < amount; i++) {
-            pool.stakeToken.safeTransferFrom(
+            IERC721(pool.stakeToken).safeTransferFrom(
                 msg.sender,
                 address(this),
                 tokenIds[i]
@@ -122,14 +126,14 @@ contract ERC721LockUpPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < length; i++) {
-            if (pool.stakedTokens[tokenIds[i]] != msg.sender)
+            if (stakedTokens[tokenIds[i]] != msg.sender)
                 revert NotStaker();
-            delete pool.stakedTokens[tokenIds[i]];
+            delete stakedTokens[tokenIds[i]];
         }
 
         // Interactions: Transfer the tokens after state changes
         for (uint256 i = 0; i < length; i++) {
-            pool.stakeToken.safeTransferFrom(
+            IERC721(pool.stakeToken).safeTransferFrom(
                 address(this),
                 msg.sender,
                 tokenIds[i]
@@ -142,9 +146,9 @@ contract ERC721LockUpPool is
      * @dev See {IERC721BasePool-claim}.
      */
     function claim() external nonReentrant {
-        // Check if the current timestamp is before the claim lockup time
-        if (block.timestamp < pool.claimLockupTime)
-            revert TokensInLockup(block.timestamp, pool.claimLockupTime);
+        // Check if the current timestamp is before the claim LockUp time
+        if (block.timestamp < pool.claimLockUpTime)
+            revert TokensInLockUp(block.timestamp, pool.claimLockUpTime);
 
         // Update the pool
         _updatePool();

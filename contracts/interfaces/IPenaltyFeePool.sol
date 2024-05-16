@@ -3,9 +3,8 @@ pragma solidity 0.8.25;
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC721BasePool} from "./IERC721BasePool.sol";
 
-interface IERC721NoLockupPool is IERC721BasePool{
+interface IPenaltyFeePoolStorage {
 
     /**
      * @notice Storage for a user's staking information
@@ -19,6 +18,8 @@ interface IERC721NoLockupPool is IERC721BasePool{
         uint256 claimed;
         uint256 rewardDebt;
         uint256 pending;
+        uint256 penaltyEndTime;
+        bool penalized;
     }
 
     /**
@@ -32,18 +33,42 @@ interface IERC721NoLockupPool is IERC721BasePool{
      * @dev totalClaimed: Total rewards claimed
      * @dev lastUpdateTimestamp: The timestamp of the last update
      * @dev accRewardPerShare: Accumulated rewards per staked token
-     * @dev stakedTokens: Mapping tokenIds to owner addresses
      */
-    struct Pool {
-        IERC721 stakeToken;
-        IERC20 rewardToken;
+    struct PenaltyPool {
+        address stakeToken;
+        address rewardToken;
         uint256 startTime;
         uint256 endTime;
+        uint256 penaltyPeriod;
         uint256 rewardTokenPerSecond;
         uint256 totalStaked;
         uint256 totalClaimed;
+        uint256 totalPenalties;
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
-        mapping(uint256 => address) stakedTokens;
+        address adminWallet;
     }
+    
+    /**
+     *  ERROR MESSAGES
+     */
+    /// @dev Error to indicate that tokens are still in LockUp and cannot be claimed
+    /// @param currentTime The current timestamp
+    /// @param unlockTime The timestamp when the tokens will be unlocked for claim
+    error ClaimInLockUp(uint256 currentTime, uint256 unlockTime);
+    /// @dev Error to indicate an invalid penalty duration for unstaking
+    error InvalidPenaltyPeriod();
+    /// @dev Error to indicate that the caller is not the admin
+    error NotAdmin();
+
+    /**
+     *  EVENTS
+     */
+    
+    /**
+     * @notice Event to notify when an admin claims accumulated fees
+     * @dev Emitted in 'claim' function
+     * @param amount The amount of fees claimed
+     */
+    event FeeClaim(uint256 amount);
 }

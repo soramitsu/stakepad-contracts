@@ -5,21 +5,21 @@ import {
   time,
 } from "@nomicfoundation/hardhat-network-helpers";
 import {
-  ERC20LockupPool,
+  ERC20LockUpPool,
   ERC20MockToken,
   ERC20LockUpStakingFactory,
   ERC20LockUpStakingFactory__factory,
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { parseEther } from "ethers";
+import { BytesLike, parseEther } from "ethers";
 
 interface DeploymentParams {
   currentTime: number;
   rewardTokenPerSecond: bigint;
   poolStartTime: number;
   poolEndTime: number;
-  unstakeLockup: number;
-  claimLockup: number;
+  unstakeLockUp: number;
+  claimLockUp: number;
   adminAddress: string;
   stakeToken: string;
   rewardToken: string;
@@ -34,25 +34,27 @@ describe("Contract Deployment", async function () {
   let rewardTokenPerSecond: bigint;
   let poolStartTime: number;
   let poolEndTime: number;
-  let unstakeLockup: number;
-  let claimLockup: number;
+  let unstakeLockUp: number;
+  let claimLockUp: number;
+  let ipfsHash: BytesLike;
   let signer: HardhatEthersSigner;
   let ayo: HardhatEthersSigner;
   let alina: HardhatEthersSigner;
   let vartan: HardhatEthersSigner;
-  let poolContract: ERC20LockupPool;
+  let poolContract: ERC20LockUpPool;
 
   before(async () => {
     StakingFactory = await ethers.getContractFactory(
       "ERC20LockUpStakingFactory"
     );
+    ipfsHash = ethers.randomBytes(32);
     ercStakingPoolFactory = await StakingFactory.deploy();
     const blockTimestamp = await time.latest();
     rewardTokenPerSecond = ethers.parseEther("1");
     poolStartTime = blockTimestamp;
     poolEndTime = blockTimestamp;
-    unstakeLockup = blockTimestamp;
-    claimLockup = blockTimestamp;
+    unstakeLockUp = blockTimestamp;
+    claimLockUp = blockTimestamp;
     [signer, ayo, alina, vartan] = await ethers.getSigners();
 
     mockStakeToken = await ethers.deployContract("ERC20MockToken", [
@@ -81,19 +83,19 @@ describe("Contract Deployment", async function () {
     it("Request creation failed: invalid staking token address", async function () {
       poolStartTime += 100;
       poolEndTime = poolStartTime + 120;
-      unstakeLockup = poolStartTime + 10;
-      claimLockup = poolStartTime + 10;
+      unstakeLockUp = poolStartTime + 10;
+      claimLockUp = poolStartTime + 10;
       const data = {
         stakeToken: ethers.ZeroAddress,
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
-        unstakeLockupTime: unstakeLockup,
-        claimLockupTime: claimLockup,
+        unstakeLockUpTime: unstakeLockUp,
+        claimLockUpTime: claimLockUp,
         rewardPerSecond: rewardTokenPerSecond
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -101,19 +103,19 @@ describe("Contract Deployment", async function () {
     it("Request creation failed: invalid reward token addresses", async function () {
       poolStartTime += 100;
       poolEndTime = poolStartTime + 120;
-      unstakeLockup = poolStartTime + 10;
-      claimLockup = poolStartTime + 10;
+      unstakeLockUp = poolStartTime + 10;
+      claimLockUp = poolStartTime + 10;
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: ethers.ZeroAddress,
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
-        unstakeLockupTime: unstakeLockup,
-        claimLockupTime: claimLockup,
+        unstakeLockUpTime: unstakeLockUp,
+        claimLockUpTime: claimLockUp,
         rewardPerSecond: rewardTokenPerSecond
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -121,19 +123,19 @@ describe("Contract Deployment", async function () {
     it("Request creation failed: invalid reward token addresses", async function () {
       poolStartTime += 100;
       poolEndTime = poolStartTime + 120;
-      unstakeLockup = poolStartTime + 10;
-      claimLockup = poolStartTime + 10;
+      unstakeLockUp = poolStartTime + 10;
+      claimLockUp = poolStartTime + 10;
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
-        unstakeLockupTime: unstakeLockup,
-        claimLockupTime: claimLockup,
+        unstakeLockUpTime: unstakeLockUp,
+        claimLockUpTime: claimLockUp,
         rewardPerSecond: ethers.toBigInt(0)
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRewardRate");
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRewardRate");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -141,25 +143,25 @@ describe("Contract Deployment", async function () {
     it("Request should be successfully created", async function () {
       poolStartTime += 100;
       poolEndTime = poolStartTime + 120;
-      unstakeLockup = poolStartTime + 10;
-      claimLockup = poolStartTime + 10;
+      unstakeLockUp = poolStartTime + 10;
+      claimLockUp = poolStartTime + 10;
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
-        unstakeLockupTime: unstakeLockup,
-        claimLockupTime: claimLockup,
+        unstakeLockUpTime: unstakeLockUp,
+        claimLockUpTime: claimLockUp,
         rewardPerSecond: rewardTokenPerSecond
       }
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, ayo.address, 1, values);
       length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(length).to.be.equal(1);
-      expect(req.requestStatus).to.be.equal(1);
-      expect(req.deployer).to.be.equal(ayo.address);
+      expect(req.info.requestStatus).to.be.equal(1);
+      expect(req.info.deployer).to.be.equal(ayo.address);
       expect(req.data).to.be.deep.equal(values);
     });
 
@@ -167,21 +169,21 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(ayo).approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "OwnableUnauthorizedAccount");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(1);
+      expect(req.info.requestStatus).to.be.equal(1);
     });
 
     it("Should correctly approve request deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await ercStakingPoolFactory.approveRequest(length - 1);
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Request approval failed: already approved", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Should correctly deploy pool from APPROVED request", async function () {
@@ -194,11 +196,11 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(ayo).deploy(length - 1)).to.emit(ercStakingPoolFactory, "StakingPoolDeployed");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(4);
+      expect(req.info.requestStatus).to.be.equal(4);
       let poolsLength = (await ercStakingPoolFactory.getPools()).length;
       let lastPool = await ercStakingPoolFactory.stakingPools(poolsLength - 1);
       poolContract = await ethers.getContractAt(
-        "ERC20LockupPool",
+        "ERC20LockUpPool",
         lastPool
       );
     });
@@ -245,7 +247,7 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(4);
+      expect(req.info.requestStatus).to.be.equal(4);
     });
 
     it("Another requests created with wrong start time", async function () {
@@ -254,20 +256,20 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime - 10000,
         poolEndTime: poolStartTime + 120,
-        unstakeLockupTime: poolStartTime + 10,
-        claimLockupTime: poolStartTime + 10,
+        unstakeLockUpTime: poolStartTime + 10,
+        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(length).to.be.equal(lengthBefore + 1);
       
       await ercStakingPoolFactory.approveRequest(length - 1);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(length - 1)).to.be.revertedWithCustomError(poolContract, "InvalidStartTime");
       let req = await ercStakingPoolFactory.requests(lengthBefore);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Another requests created with wrong staking period", async function () {
@@ -276,13 +278,13 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 10000,
         poolEndTime: poolStartTime + 120,
-        unstakeLockupTime: poolStartTime + 10,
-        claimLockupTime: poolStartTime + 10,
+        unstakeLockUpTime: poolStartTime + 10,
+        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       
       expect(length).to.be.equal(lengthBefore + 1);
@@ -290,67 +292,67 @@ describe("Contract Deployment", async function () {
       await ercStakingPoolFactory.approveRequest(lengthBefore);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidStakingPeriod");
       let req = await ercStakingPoolFactory.requests(lengthBefore);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
-    it("Another requests created with wrong unstake lockup time", async function () {
+    it("Another requests created with wrong unstake LockUp time", async function () {
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
-        unstakeLockupTime: poolEndTime + 130,
-        claimLockupTime: poolStartTime + 10,
+        unstakeLockUpTime: poolEndTime + 130,
+        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(lengthBefore);
       expect(length).to.be.equal(lengthBefore + 1);
-      expect(req.requestStatus).to.be.equal(1);
+      expect(req.info.requestStatus).to.be.equal(1);
       await ercStakingPoolFactory.approveRequest(length - 1);
-      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockupTime");
+      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });
 
-    it("Another requests created with wrong claim lockup time", async function () {
+    it("Another requests created with wrong claim LockUp time", async function () {
       const data = {
         stakeToken: await mockStakeToken.getAddress(),
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
-        unstakeLockupTime: poolStartTime + 10,
-        claimLockupTime: poolEndTime + 10,
+        unstakeLockUpTime: poolStartTime + 10,
+        claimLockUpTime: poolEndTime + 10,
         rewardPerSecond: rewardTokenPerSecond
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       await ercStakingPoolFactory.approveRequest(lengthBefore);
-      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockupTime");
+      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });
 
     it("Cancel last approved request failed: caller is not an owner", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
       await expect(ercStakingPoolFactory.cancelRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidCaller");
     });
 
     it("Cancel last approved request", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
       await expect(ercStakingPoolFactory.connect(ayo).cancelRequest(length - 1)).to.be.emit(ercStakingPoolFactory, "RequestStatusChanged");
       req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(5);
+      expect(req.info.requestStatus).to.be.equal(5);
     });
 
     it("Cancel last approved request failed: already canceled", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(5);
+      expect(req.info.requestStatus).to.be.equal(5);
       await expect(ercStakingPoolFactory.connect(ayo).cancelRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
     });
   })
@@ -492,8 +494,8 @@ describe("Contract Deployment", async function () {
     rewardToken: string;
     startTime: bigint;
     endTime: bigint;
-    unstakeLockupTime: bigint;
-    claimLockupTime: bigint;
+    unstakeLockUpTime: bigint;
+    claimLockUpTime: bigint;
     rewardTokenPerSecond: bigint;
     totalStaked: bigint;
     totalClaimed: bigint;
