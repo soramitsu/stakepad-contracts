@@ -14,12 +14,10 @@ interface ILockUpFactory is IBaseFactory {
         uint256 rewardPerSecond;
     }
 
-    struct Request {
-        address deployer;
-        Status requestStatus;
+    struct LockUpRequest {
+        RequestInfo info;
         DeploymentData data;
     }
 
     event RequestSubmitted(uint256 indexed id, address indexed deployer, Status indexed status, DeploymentData data);
-    event StakingPoolDeployed(address indexed stakingAddress, uint256 indexed id);
 }

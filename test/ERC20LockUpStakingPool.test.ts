@@ -11,7 +11,7 @@ import {
   ERC20LockUpStakingFactory__factory,
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { parseEther } from "ethers";
+import { BytesLike, parseEther } from "ethers";
 
 interface DeploymentParams {
   currentTime: number;
@@ -36,6 +36,7 @@ describe("Contract Deployment", async function () {
   let poolEndTime: number;
   let unstakeLockUp: number;
   let claimLockUp: number;
+  let ipfsHash: BytesLike;
   let signer: HardhatEthersSigner;
   let ayo: HardhatEthersSigner;
   let alina: HardhatEthersSigner;
@@ -46,6 +47,7 @@ describe("Contract Deployment", async function () {
     StakingFactory = await ethers.getContractFactory(
       "ERC20LockUpStakingFactory"
     );
+    ipfsHash = ethers.randomBytes(32);
     ercStakingPoolFactory = await StakingFactory.deploy();
     const blockTimestamp = await time.latest();
     rewardTokenPerSecond = ethers.parseEther("1");
@@ -93,7 +95,7 @@ describe("Contract Deployment", async function () {
         rewardPerSecond: rewardTokenPerSecond
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -113,7 +115,7 @@ describe("Contract Deployment", async function () {
         rewardPerSecond: rewardTokenPerSecond
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -133,7 +135,7 @@ describe("Contract Deployment", async function () {
         rewardPerSecond: ethers.toBigInt(0)
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRewardRate");
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRewardRate");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -154,12 +156,12 @@ describe("Contract Deployment", async function () {
       }
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, ayo.address, 1, values);
       length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(length).to.be.equal(1);
-      expect(req.requestStatus).to.be.equal(1);
-      expect(req.deployer).to.be.equal(ayo.address);
+      expect(req.info.requestStatus).to.be.equal(1);
+      expect(req.info.deployer).to.be.equal(ayo.address);
       expect(req.data).to.be.deep.equal(values);
     });
 
@@ -167,21 +169,21 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(ayo).approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "OwnableUnauthorizedAccount");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(1);
+      expect(req.info.requestStatus).to.be.equal(1);
     });
 
     it("Should correctly approve request deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await ercStakingPoolFactory.approveRequest(length - 1);
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Request approval failed: already approved", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Should correctly deploy pool from APPROVED request", async function () {
@@ -194,7 +196,7 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(ayo).deploy(length - 1)).to.emit(ercStakingPoolFactory, "StakingPoolDeployed");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(4);
+      expect(req.info.requestStatus).to.be.equal(4);
       let poolsLength = (await ercStakingPoolFactory.getPools()).length;
       let lastPool = await ercStakingPoolFactory.stakingPools(poolsLength - 1);
       poolContract = await ethers.getContractAt(
@@ -207,7 +209,7 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(4);
+      expect(req.info.requestStatus).to.be.equal(4);
     });
 
     it("Another requests created with wrong start time", async function () {
@@ -222,14 +224,14 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(length).to.be.equal(lengthBefore + 1);
       
       await ercStakingPoolFactory.approveRequest(length - 1);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(length - 1)).to.be.revertedWithCustomError(poolContract, "InvalidStartTime");
       let req = await ercStakingPoolFactory.requests(lengthBefore);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Another requests created with wrong staking period", async function () {
@@ -244,7 +246,7 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       
       expect(length).to.be.equal(lengthBefore + 1);
@@ -252,7 +254,7 @@ describe("Contract Deployment", async function () {
       await ercStakingPoolFactory.approveRequest(lengthBefore);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidStakingPeriod");
       let req = await ercStakingPoolFactory.requests(lengthBefore);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
     });
 
     it("Another requests created with wrong unstake LockUp time", async function () {
@@ -267,11 +269,11 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(lengthBefore);
       expect(length).to.be.equal(lengthBefore + 1);
-      expect(req.requestStatus).to.be.equal(1);
+      expect(req.info.requestStatus).to.be.equal(1);
       await ercStakingPoolFactory.approveRequest(length - 1);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });
@@ -288,7 +290,7 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
       await ercStakingPoolFactory.approveRequest(lengthBefore);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });
@@ -296,23 +298,23 @@ describe("Contract Deployment", async function () {
     it("Cancel last approved request failed: caller is not an owner", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
       await expect(ercStakingPoolFactory.cancelRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidCaller");
     });
 
     it("Cancel last approved request", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(3);
+      expect(req.info.requestStatus).to.be.equal(3);
       await expect(ercStakingPoolFactory.connect(ayo).cancelRequest(length - 1)).to.be.emit(ercStakingPoolFactory, "RequestStatusChanged");
       req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(5);
+      expect(req.info.requestStatus).to.be.equal(5);
     });
 
     it("Cancel last approved request failed: already canceled", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
-      expect(req.requestStatus).to.be.equal(5);
+      expect(req.info.requestStatus).to.be.equal(5);
       await expect(ercStakingPoolFactory.connect(ayo).cancelRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
     });
   })
