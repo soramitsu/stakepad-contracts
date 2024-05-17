@@ -264,7 +264,7 @@ describe("Contract Deployment", async function () {
       expect(length).to.be.equal(lengthBefore + 1);
       expect(req.info.requestStatus).to.be.equal(1);
       await ercStakingPoolFactory.approveRequest(length - 1);
-      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
+      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidRestrictionTime");
     });
 
     it("Another requests created with wrong claim LockUp time", async function () {
@@ -281,7 +281,7 @@ describe("Contract Deployment", async function () {
       let values = Object.values(data);
       await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ipfsHash, ayo.address, 1, values);
       await ercStakingPoolFactory.approveRequest(lengthBefore);
-      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
+      await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidRestrictionTime");
     });
 
     it("Cancel last approved request failed: caller is not an owner", async function () {

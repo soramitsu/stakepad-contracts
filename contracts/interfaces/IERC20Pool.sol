@@ -3,32 +3,6 @@ pragma solidity 0.8.25;
 
 interface IPoolERC20 {
     /**
-     *  ERROR MESSAGES
-     */
-    /// @dev Error to indicate an invalid staking period
-    error InvalidStakingPeriod();
-
-    /// @dev Error to indicate an invalid start time for the staking pool
-    error InvalidStartTime();
-
-    /// @dev Error to indicate an invalid input amount for the staking and unstaking operations in the pool
-    error InvalidAmount();
-
-    /// @dev Error to indicate insufficient amount of tokens
-    /// @param reqAmount The amount of tokens that is required
-    /// @param currentAmount The current amount of tokens
-    error InsufficientAmount(uint256 reqAmount, uint256 currentAmount);
-
-    /// @dev Error to indicate that the user has no available rewards to claim
-    error NothingToClaim();
-
-    /// @dev Error to indicate that the staking pool has not started yet
-    error PoolNotStarted();
-
-    /// @dev Error to indicate that the staking pool has already ended
-    error PoolHasEnded();
-
-    /**
      *  EVENTS
      */
 

@@ -7,12 +7,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IPoolERC721} from "../../interfaces/IERC721Pool.sol";
+import {IPoolErrors} from "../../interfaces/IPoolErrors.sol";
 import {ILockUpPoolStorage} from "../../interfaces/ILockUpPool.sol";
 
 contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
     IPoolERC721,
+    IPoolErrors,
     ILockUpPoolStorage
 {
     using SafeERC20 for IERC20;
@@ -47,7 +49,7 @@ contract ERC721LockUpPool is
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the LockUp periods are valid
         if (unstakeLockUpTime > poolEndTime || claimLockUpTime > poolEndTime)
-            revert InvalidLockUpTime();
+            revert InvalidRestrictionTime();
 
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;

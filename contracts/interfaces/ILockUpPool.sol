@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 interface ILockUpPoolStorage {
-
     /**
      * @notice Storage for a user's staking information
      * @dev amount Number of tokens staked by the user.
@@ -48,15 +47,4 @@ interface ILockUpPoolStorage {
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
     }
-    
-    /**
-     *  ERROR MESSAGES
-     */
-    /// @dev Error to indicate that tokens are still in LockUp and cannot be accessed
-    /// @param currentTime The current timestamp
-    /// @param unlockTime The timestamp when the tokens will be unlocked
-    error TokensInLockUp(uint256 currentTime, uint256 unlockTime);
-
-    /// @dev Error to indicate an invalid LockUp time for unstaking or claiming rewards
-    error InvalidLockUpTime();
 }

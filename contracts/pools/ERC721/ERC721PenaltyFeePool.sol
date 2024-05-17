@@ -7,12 +7,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IPoolERC721} from "../../interfaces/IERC721Pool.sol";
+import {IPoolErrors} from "../../interfaces/IPoolErrors.sol";
 import {IPenaltyFeePoolStorage} from "../../interfaces/IPenaltyFeePool.sol";
 
 contract draftERC721PenaltyFeepPool is
     ReentrancyGuard,
     Ownable,
     IPoolERC721,
+    IPoolErrors,
     IPenaltyFeePoolStorage
 {
     using SafeERC20 for IERC20;
@@ -49,7 +51,7 @@ contract draftERC721PenaltyFeepPool is
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the LockUp periods are valid
         if (poolEndTime - poolStartTime > penaltyPeriod)
-            revert InvalidPenaltyPeriod();
+            revert InvalidRestrictionTime();
 
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
@@ -152,7 +154,7 @@ contract draftERC721PenaltyFeepPool is
         UserInfo storage user = userInfo[msg.sender];
         // Check if the current timestamp is before the claim LockUp time
         if (block.timestamp < user.penaltyEndTime)
-            revert ClaimInLockUp(block.timestamp, user.penaltyEndTime);
+            revert TokensInLockUp(block.timestamp, user.penaltyEndTime);
         // Update the pool
         _updatePool();
         uint256 amount = user.amount;

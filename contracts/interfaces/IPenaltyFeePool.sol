@@ -5,7 +5,6 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IPenaltyFeePoolStorage {
-
     /**
      * @notice Storage for a user's staking information
      * @dev amount Number of tokens staked by the user.
@@ -49,18 +48,6 @@ interface IPenaltyFeePoolStorage {
         address adminWallet;
     }
     
-    /**
-     *  ERROR MESSAGES
-     */
-    /// @dev Error to indicate that tokens are still in LockUp and cannot be claimed
-    /// @param currentTime The current timestamp
-    /// @param unlockTime The timestamp when the tokens will be unlocked for claim
-    error ClaimInLockUp(uint256 currentTime, uint256 unlockTime);
-    /// @dev Error to indicate an invalid penalty duration for unstaking
-    error InvalidPenaltyPeriod();
-    /// @dev Error to indicate that the caller is not the admin
-    error NotAdmin();
-
     /**
      *  EVENTS
      */

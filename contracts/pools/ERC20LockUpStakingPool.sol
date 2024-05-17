@@ -4,6 +4,7 @@ pragma solidity 0.8.25;
 // Import OpenZeppelin contracts for ERC20 token interaction, reentrancy protection, safe token transfers, and ownership management.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPoolERC20} from "../interfaces/IERC20Pool.sol";
+import {IPoolErrors} from "../interfaces/IPoolErrors.sol";
 import {ILockUpPoolStorage} from "../interfaces/ILockUpPool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,7 +12,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title ERC20LockUpPool
 /// @notice A smart contract for staking ERC20 tokens and earning rewards over a specified period.
-contract ERC20LockUpPool is ReentrancyGuard, Ownable, IPoolERC20, ILockUpPoolStorage {
+contract ERC20LockUpPool is ReentrancyGuard, Ownable, IPoolERC20, IPoolErrors, ILockUpPoolStorage {
     using SafeERC20 for IERC20;
 
     /// @dev Precision factor for calculations
@@ -52,7 +53,7 @@ contract ERC20LockUpPool is ReentrancyGuard, Ownable, IPoolERC20, ILockUpPoolSto
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the LockUp periods are valid
         if (unstakeLockUp > poolEndTime || claimLockUp > poolEndTime)
-            revert InvalidLockUpTime();
+            revert InvalidRestrictionTime();
 
         // Initialize pool parameters
         pool.stakeToken = stakeToken;

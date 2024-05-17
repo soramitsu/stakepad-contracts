@@ -5,12 +5,13 @@ SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPoolERC20} from "../interfaces/IERC20Pool.sol";
+import {IPoolErrors} from "../interfaces/IPoolErrors.sol";
 import {IPenaltyFeePoolStorage} from "../interfaces/IPenaltyFeePool.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPenaltyFeePoolStorage {
+contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPoolErrors, IPenaltyFeePoolStorage {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION_FACTOR = 10e18;
     uint256 public constant PENALTY_FEE = 2500;
@@ -45,7 +46,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPenaltyFe
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         if (poolEndTime - poolStartTime > penaltyPeriod)
-            revert InvalidPenaltyPeriod();
+            revert InvalidRestrictionTime();
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
@@ -118,7 +119,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPenaltyFe
     function claim() external nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         if (block.timestamp < user.penaltyEndTime)
-            revert ClaimInLockUp(block.timestamp, user.penaltyEndTime);
+            revert TokensInLockUp(block.timestamp, user.penaltyEndTime);
         _updatePool();
         uint256 amount = user.amount;
         uint256 pending = user.pending;
