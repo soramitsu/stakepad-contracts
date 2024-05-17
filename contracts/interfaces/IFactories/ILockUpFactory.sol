@@ -9,9 +9,9 @@ interface ILockUpFactory is IBaseFactory {
         address rewardToken;
         uint256 poolStartTime;
         uint256 poolEndTime;
+        uint256 rewardPerSecond;
         uint256 unstakeLockUpTime; // LockUp period for unstaking
         uint256 claimLockUpTime; // LockUp period for claiming rewards
-        uint256 rewardPerSecond;
     }
 
     struct LockUpRequest {
@@ -19,5 +19,5 @@ interface ILockUpFactory is IBaseFactory {
         DeploymentData data;
     }
 
-    event RequestSubmitted(uint256 indexed id, address indexed deployer, Status indexed status, DeploymentData data);
+    event RequestSubmitted(uint256 indexed id, bytes32 ipfsHash, address indexed deployer, Status indexed status, DeploymentData data);
 }

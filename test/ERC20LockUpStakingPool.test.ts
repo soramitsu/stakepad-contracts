@@ -139,13 +139,13 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: unstakeLockUp,
-        claimLockUpTime: claimLockUp,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: claimLockUp
       }
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, ipfsHash, ayo.address, 1, values);
       length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(length).to.be.equal(1);
@@ -207,13 +207,13 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime - 10000,
         poolEndTime: poolStartTime + 120,
-        unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond,
+        unstakeLockUpTime: poolStartTime + 10,
+        claimLockUpTime: poolStartTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ipfsHash, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(length).to.be.equal(lengthBefore + 1);
 
@@ -229,13 +229,13 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 10000,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ipfsHash, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
 
       expect(length).to.be.equal(lengthBefore + 1);
@@ -252,13 +252,13 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
-        unstakeLockUpTime: poolEndTime + 130,
-        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond,
+        unstakeLockUpTime: poolEndTime + 130,
+        claimLockUpTime: poolStartTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ipfsHash, ayo.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(lengthBefore);
       expect(length).to.be.equal(lengthBefore + 1);
@@ -273,13 +273,13 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolEndTime + 10,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: poolEndTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ayo.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(ayo).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, ipfsHash, ayo.address, 1, values);
       await ercStakingPoolFactory.approveRequest(lengthBefore);
       await expect(ercStakingPoolFactory.connect(ayo).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });

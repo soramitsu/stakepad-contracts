@@ -34,17 +34,17 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
                     abi.encode(
                         req.data.stakeToken,
                         req.data.rewardToken,
-                        req.data.rewardPerSecond,
                         req.data.poolStartTime,
-                        req.data.poolEndTime
+                        req.data.poolEndTime,
+                        req.data.rewardPerSecond
                     )
                 )
             }(
                 req.data.stakeToken,
                 req.data.rewardToken,
-                req.data.rewardPerSecond,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
+                req.data.rewardPerSecond,
                 req.data.penaltyPeriod,
                 owner()
             )
@@ -70,6 +70,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         );
         emit RequestSubmitted(
             requests.length - 1,
+            ipfsHash,
             msg.sender,
             Status.CREATED,
             data

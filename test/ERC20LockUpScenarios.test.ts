@@ -138,9 +138,9 @@ describe("ERC20LockupPool Standard Scenario", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: unstakeLockUp,
         claimLockUpTime: claimLockUp,
-        rewardPerSecond: rewardTokenPerSecond
       };
       const { poolContract } = await deployAndSetupPool(ipfsHash, ayo, data);
   
@@ -255,9 +255,9 @@ describe("ERC20LockupPool Standard Scenario", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: unstakeLockUp,
-        claimLockUpTime: claimLockUp,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: claimLockUp
       };
       const { poolContract } = await deployAndSetupPool(ipfsHash, ayo, data);
   

@@ -34,9 +34,9 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPenaltyFe
     constructor(
         address stakeToken,
         address rewardToken,
-        uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
+        uint256 rewardTokenPerSecond,
         uint256 penaltyPeriod,
         address adminAddress
     ) Ownable(msg.sender) {

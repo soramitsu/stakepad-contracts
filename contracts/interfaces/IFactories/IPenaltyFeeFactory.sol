@@ -9,8 +9,8 @@ interface IPenaltyFeeFactory is IBaseFactory {
         address rewardToken;
         uint256 poolStartTime;
         uint256 poolEndTime;
-        uint256 penaltyPeriod;
         uint256 rewardPerSecond;
+        uint256 penaltyPeriod;
     }
 
     struct PenaltyFeeRequest {
@@ -18,5 +18,5 @@ interface IPenaltyFeeFactory is IBaseFactory {
         DeploymentData data;
     }
 
-    event RequestSubmitted(uint256 indexed id, address indexed deployer, Status indexed status, DeploymentData data);
+    event RequestSubmitted(uint256 indexed id, bytes32 ipfsHash, address indexed deployer, Status indexed status, DeploymentData data);
 }

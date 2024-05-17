@@ -35,9 +35,9 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
                     abi.encode(
                         req.data.stakeToken,
                         req.data.rewardToken,
-                        req.data.rewardPerSecond,
                         req.data.poolStartTime,
-                        req.data.poolEndTime
+                        req.data.poolEndTime,
+                        req.data.rewardPerSecond
                     )
                 )
             }(
@@ -45,9 +45,9 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
                 req.data.rewardToken,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
+                req.data.rewardPerSecond,
                 req.data.unstakeLockUpTime,
-                req.data.claimLockUpTime,
-                req.data.rewardPerSecond
+                req.data.claimLockUpTime
             )
         );
         stakingPools.push(newPoolAddress);
@@ -85,6 +85,7 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
         );
         emit RequestSubmitted(
             requests.length - 1,
+            ipfsHash,
             msg.sender,
             Status.CREATED,
             data
