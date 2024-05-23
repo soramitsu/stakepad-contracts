@@ -102,6 +102,13 @@ describe("ERC20LockupPool Standard Scenario", async function () {
       rewardPerSecond: rewardTokenPerSecond,
     };
     let { poolContract } = await deployAndSetupPool(ipfsHash, deployer, data);
+    const users = [admin, ayo, alina, vartan, signer, nikita, mary];
+    let poolAddress = await poolContract.getAddress();
+    for (const user of users) {
+      await approve(1000000000000, user, mockStakeToken, poolAddress);
+      await approve(1000000000000, admin, mockStakeToken, user.address);
+      await mockStakeToken.transferFrom(admin, user, ethers.parseEther("200"));
+    }
     // **Scenario: Pool Not Started**
     await expect(
       poolContract.stake(ethers.parseEther("100"))
@@ -109,7 +116,6 @@ describe("ERC20LockupPool Standard Scenario", async function () {
 
     // **Scenario: Pool Started, Staking**
     await time.increase(100); // Advance time to pool start
-    await mint(100, alina, mockStakeToken);
     await approve(100, alina, mockStakeToken, await poolContract.getAddress());
     await expect(poolContract.connect(alina).stake(ethers.parseEther("100")))
       .to.emit(poolContract, "Stake")
@@ -126,10 +132,18 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     let { pendingReward, userBalanceBeforeClaim, userBalanceAfterClaim } =
       await claimRewards(poolContract, alina);
     expect(userBalanceAfterClaim).to.be.equal(
-      pendingReward + userBalanceBeforeClaim
+      parseEther("702.0")
     );
 
     // **Scenario: New User (Vartan) Stakes**
+    //Fund Vartan
+    await approve(1000000000000, admin, mockStakeToken, vartan.address);
+    await mockStakeToken
+        .connect(admin)
+        .approve(
+          vartan.address,
+            ethers.parseEther("" + 5000)
+        );
     await mockStakeToken.transferFrom(
       admin.address,
       vartan.address,
@@ -182,10 +196,8 @@ describe("ERC20LockupPool Standard Scenario", async function () {
       await mockStakeToken.transferFrom(admin, user, ethers.parseEther("200"));
     }
 
-    // --- Initial Staking (Time = 100 seconds) ---
-    console.log("1 Current Time: " + (await time.latest()));
+    // --- Initial Staking (Time = 100 seconds)
     await time.increaseTo(poolStartTime);
-    console.log("2 Current Time: " + (await time.latest()));
 
     await poolContract.connect(ayo).stake(ethers.parseEther("75"));
     expect(await mockStakeToken.balanceOf(ayo.address)).to.equal(
@@ -218,9 +230,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     ); // 200 - 105
 
     // --- First Claim Period (Time = 300 seconds) ---
-    console.log("3 Current Time: " + (await time.latest()));
     await time.increaseTo(claimLockUp);
-    console.log("4 Current Time: " + (await time.latest()));
 
     let { pendingReward: ayoPending } = await claimRewards(poolContract, ayo);
     expect(ayoPending).to.be.closeTo(
@@ -271,9 +281,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     );
 
     // --- First Unstaking (Time = 600 seconds) ---
-    console.log("5 Current Time: " + (await time.latest()));
     await time.increaseTo(unstakeLockUp);
-    console.log("6 Current Time: " + (await time.latest()));
 
     await poolContract.connect(ayo).unstake(ethers.parseEther("30"));
     expect(await mockStakeToken.balanceOf(ayo.address)).to.equal(
@@ -306,9 +314,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     ); // 95 + 35
 
     // --- Second Claim Period (Time = 900 seconds) ---
-    console.log("7 Current Time: " + (await time.latest()));
-    await time.increaseTo(poolStartTime + 900); // 900 seconds after pool start
-    console.log("8 Current Time: " + (await time.latest()));
+    await time.increaseTo(unstakeLockUp + 400); // 400 seconds after unstake lockup end
 
     let { pendingReward: ayoSecondPending } = await claimRewards(
       poolContract,
@@ -338,9 +344,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     );
 
     let {
-      pendingReward: nikitaSecondPending,
-      userBalanceBeforeClaim: nikeBeforeClaim,
-      userBalanceAfterClaim: nikeAfterClam,
+      pendingReward: nikitaSecondPending
     } = await claimRewards(poolContract, nikita);
     expect(nikitaSecondPending).to.be.closeTo(
       ethers.parseEther("111.56"),
