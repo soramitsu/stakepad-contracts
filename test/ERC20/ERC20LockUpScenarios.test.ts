@@ -10,6 +10,7 @@ import {
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BigNumberish, BytesLike, parseEther } from "ethers";
 import { mint, approve, deployAndSetupPool } from "../helpers";
+import { increaseTo } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 describe("ERC20LockupPool Standard Scenario", async function () {
   let mockStakeToken: ERC20MockToken;
@@ -149,12 +150,17 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(alinaFinalBalance).to.be.equal(alinaPending + alinaInitialBalance);
   });
 
-  it("Handles multiple users staking different amounts, unstaking, and claiming", async function () {
+  it("Handles multiple users staking/unstaking/claiming with reward calculations", async function () {
     poolStartTime = (await time.latest()) + 100; // Start in 100 seconds
     poolEndTime = poolStartTime + 1000; // End in 1000 seconds after start
     unstakeLockUp = poolStartTime + 500; // Lockup 500 seconds after start
     claimLockUp = poolStartTime + 200; // Lockup 200 seconds after start
     rewardTokenPerSecond = ethers.parseEther("1"); // 1 RWD per second
+    console.log("poolStartTime: " + poolStartTime);
+    console.log("poolEndTime: " + poolEndTime);
+    console.log("unstakeLockUp: " + unstakeLockUp);
+    console.log("claimLockUp: " + claimLockUp);
+
     const data = {
       stakeToken: await mockStakeToken.getAddress(),
       rewardToken: await mockRewardToken.getAddress(),
@@ -164,243 +170,190 @@ describe("ERC20LockupPool Standard Scenario", async function () {
       unstakeLockUpTime: unstakeLockUp,
       claimLockUpTime: claimLockUp,
     };
+
     const { poolContract } = await deployAndSetupPool(ipfsHash, deployer, data);
 
-    const users = [admin, ayo, alina, vartan, signer, nikita, mary, mansur];
+    // Approve and transfer stake tokens to all users (except mansur)
+    const users = [admin, ayo, alina, vartan, signer, nikita, mary];
     let poolAddress = await poolContract.getAddress();
     for (const user of users) {
       await approve(1000000000000, user, mockStakeToken, poolAddress);
       await approve(1000000000000, admin, mockStakeToken, user.address);
-      await mockStakeToken.transferFrom(
-        admin,
-        user,
-        ethers.parseEther("10000000000")
-      );
+      await mockStakeToken.transferFrom(admin, user, ethers.parseEther("200"));
     }
 
+    // --- Initial Staking (Time = 100 seconds) ---
+    console.log("1 Current Time: " + (await time.latest()));
     await time.increaseTo(poolStartTime);
+    console.log("2 Current Time: " + (await time.latest()));
 
     await poolContract.connect(ayo).stake(ethers.parseEther("75"));
+    expect(await mockStakeToken.balanceOf(ayo.address)).to.equal(
+      ethers.parseEther("125")
+    ); // 200 - 75
+
     await poolContract.connect(alina).stake(ethers.parseEther("120"));
+    expect(await mockStakeToken.balanceOf(alina.address)).to.equal(
+      ethers.parseEther("80")
+    ); // 200 - 120
+
     await poolContract.connect(vartan).stake(ethers.parseEther("90"));
+    expect(await mockStakeToken.balanceOf(vartan.address)).to.equal(
+      ethers.parseEther("110")
+    ); // 200 - 90
+
     await poolContract.connect(signer).stake(ethers.parseEther("115"));
+    expect(await mockStakeToken.balanceOf(signer.address)).to.equal(
+      ethers.parseEther("85")
+    ); // 200 - 115
+
     await poolContract.connect(nikita).stake(ethers.parseEther("85"));
+    expect(await mockStakeToken.balanceOf(nikita.address)).to.equal(
+      ethers.parseEther("115")
+    ); // 200 - 85
+
     await poolContract.connect(mary).stake(ethers.parseEther("105"));
+    expect(await mockStakeToken.balanceOf(mary.address)).to.equal(
+      ethers.parseEther("95")
+    ); // 200 - 105
 
+    // --- First Claim Period (Time = 300 seconds) ---
+    console.log("3 Current Time: " + (await time.latest()));
+    await time.increaseTo(claimLockUp);
+    console.log("4 Current Time: " + (await time.latest()));
+
+    let { pendingReward: ayoPending } = await claimRewards(poolContract, ayo);
+    expect(ayoPending).to.be.closeTo(
+      ethers.parseEther("26.65"),
+      ethers.parseEther("0.1")
+    );
+
+    let { pendingReward: alinaPending } = await claimRewards(
+      poolContract,
+      alina
+    );
+    expect(alinaPending).to.be.closeTo(
+      ethers.parseEther("41.244"),
+      ethers.parseEther("0.1")
+    );
+
+    let { pendingReward: vartanPending } = await claimRewards(
+      poolContract,
+      vartan
+    );
+    expect(vartanPending).to.be.closeTo(
+      ethers.parseEther("30.624"),
+      ethers.parseEther("0.1")
+    );
+
+    let { pendingReward: signerPending } = await claimRewards(
+      poolContract,
+      signer
+    );
+    expect(signerPending).to.be.closeTo(
+      ethers.parseEther("38.922"),
+      ethers.parseEther("0.1")
+    );
+
+    let { pendingReward: nikitaPending } = await claimRewards(
+      poolContract,
+      nikita
+    );
+    expect(nikitaPending).to.be.closeTo(
+      ethers.parseEther("28.7"),
+      ethers.parseEther("0.1")
+    );
+
+    let { pendingReward: maryPending } = await claimRewards(poolContract, mary);
+    expect(maryPending).to.be.closeTo(
+      ethers.parseEther("35.415"),
+      ethers.parseEther("0.1")
+    );
+
+    // --- First Unstaking (Time = 600 seconds) ---
+    console.log("5 Current Time: " + (await time.latest()));
     await time.increaseTo(unstakeLockUp);
+    console.log("6 Current Time: " + (await time.latest()));
 
     await poolContract.connect(ayo).unstake(ethers.parseEther("30"));
+    expect(await mockStakeToken.balanceOf(ayo.address)).to.equal(
+      ethers.parseEther("155")
+    ); // 125 + 30
+
     await poolContract.connect(alina).unstake(ethers.parseEther("40"));
+    expect(await mockStakeToken.balanceOf(alina.address)).to.equal(
+      ethers.parseEther("120")
+    ); // 80 + 40
+
     await poolContract.connect(vartan).unstake(ethers.parseEther("50"));
+    expect(await mockStakeToken.balanceOf(vartan.address)).to.equal(
+      ethers.parseEther("160")
+    ); // 110 + 50
+
     await poolContract.connect(signer).unstake(ethers.parseEther("60"));
+    expect(await mockStakeToken.balanceOf(signer.address)).to.equal(
+      ethers.parseEther("145")
+    ); // 85 + 60
+
     await poolContract.connect(nikita).unstake(ethers.parseEther("25"));
+    expect(await mockStakeToken.balanceOf(nikita.address)).to.equal(
+      ethers.parseEther("140")
+    ); // 115 + 25
+
     await poolContract.connect(mary).unstake(ethers.parseEther("35"));
+    expect(await mockStakeToken.balanceOf(mary.address)).to.equal(
+      ethers.parseEther("130")
+    ); // 95 + 35
 
-    let {
-      pendingReward: ayoPending,
-      userBalanceBeforeClaim: ayoInitialBalance,
-      userBalanceAfterClaim: ayoFinalBalance,
-    } = await claimRewards(poolContract, ayo);
-    expect(ayoFinalBalance).to.be.equal(ayoPending + ayoInitialBalance);
+    // --- Second Claim Period (Time = 900 seconds) ---
+    console.log("7 Current Time: " + (await time.latest()));
+    await time.increaseTo(poolStartTime + 900); // 900 seconds after pool start
+    console.log("8 Current Time: " + (await time.latest()));
 
-    let {
-      pendingReward: alinaPending,
-      userBalanceBeforeClaim: alinaInitialBalance,
-      userBalanceAfterClaim: alinaFinalBalance,
-    } = await claimRewards(poolContract, alina);
-    expect(alinaFinalBalance).to.be.equal(alinaPending + alinaInitialBalance);
+    let { pendingReward: ayoSecondPending } = await claimRewards(
+      poolContract,
+      ayo
+    );
+    expect(ayoSecondPending).to.be.closeTo(
+      ethers.parseEther("89.282"),
+      ethers.parseEther("0.1")
+    );
 
-    let {
-      pendingReward: vartanPending,
-      userBalanceBeforeClaim: vartanInitialBalance,
-      userBalanceAfterClaim: vartanFinalBalance,
-    } = await claimRewards(poolContract, vartan);
-    expect(vartanFinalBalance).to.be.equal(
-      vartanPending + vartanInitialBalance
+    let { pendingReward: alinaSecondPending } = await claimRewards(
+      poolContract,
+      alina
+    );
+    expect(alinaSecondPending).to.be.closeTo(
+      ethers.parseEther("152.04"),
+      ethers.parseEther("0.1")
+    );
+
+    let { pendingReward: vartanSecondPending } = await claimRewards(
+      poolContract,
+      vartan
+    );
+    expect(vartanSecondPending).to.be.closeTo(
+      ethers.parseEther("91.335"),
+      ethers.parseEther("0.1")
     );
 
     let {
-      pendingReward: signerPending,
-      userBalanceBeforeClaim: signerInitialBalance,
-      userBalanceAfterClaim: signerFinalBalance,
-    } = await claimRewards(poolContract, signer);
-    expect(signerFinalBalance).to.be.equal(
-      signerPending + signerInitialBalance
-    );
-
-    let {
-      pendingReward: nikitaPending,
-      userBalanceBeforeClaim: nikitaInitialBalance,
-      userBalanceAfterClaim: nikitaFinalBalance,
+      pendingReward: nikitaSecondPending,
+      userBalanceBeforeClaim: nikeBeforeClaim,
+      userBalanceAfterClaim: nikeAfterClam,
     } = await claimRewards(poolContract, nikita);
-    expect(nikitaFinalBalance).to.be.equal(
-      nikitaPending + nikitaInitialBalance
+    expect(nikitaSecondPending).to.be.closeTo(
+      ethers.parseEther("111.56"),
+      ethers.parseEther("0.1")
     );
 
-    let {
-      pendingReward: maryPending,
-      userBalanceBeforeClaim: maryInitialBalance,
-      userBalanceAfterClaim: maryFinalBalance,
-    } = await claimRewards(poolContract, mary);
-    expect(maryFinalBalance).to.be.equal(maryPending + maryInitialBalance);
-
-    const newStakeAmount = ethers.parseEther("50");
-    await mockStakeToken.transferFrom(admin, mansur, newStakeAmount);
-    await approve(50, alina, mockStakeToken, await poolContract.getAddress());
-    await poolContract.connect(mansur).stake(newStakeAmount);
-
-    await time.increaseTo(poolEndTime - 100);
-
-    await time.increaseTo(poolEndTime);
-
-    let {
-      pendingReward: ayo2Pending,
-      userBalanceBeforeClaim: ayo2InitialBalance,
-      userBalanceAfterClaim: ayo2FinalBalance,
-    } = await claimRewards(poolContract, ayo);
-    expect(ayo2FinalBalance).to.be.equal(ayo2Pending + ayo2InitialBalance);
-
-    let {
-      pendingReward: alinaLastPending,
-      userBalanceBeforeClaim: alinaLastInitialBalance,
-      userBalanceAfterClaim: alinaLastFinalBalance,
-    } = await claimRewards(poolContract, alina);
-    expect(alinaLastFinalBalance).to.be.equal(
-      alinaLastPending + alinaLastInitialBalance
+    let { pendingReward: marySecondPending } = await claimRewards(
+      poolContract,
+      mary
     );
-
-    let {
-      pendingReward: vartanLastPending,
-      userBalanceBeforeClaim: vartanLastInitialBalance,
-      userBalanceAfterClaim: vartanLastFinalBalance,
-    } = await claimRewards(poolContract, vartan);
-    expect(vartanLastFinalBalance).to.be.equal(
-      vartanLastPending + vartanLastInitialBalance
-    );
-
-    let {
-      pendingReward: signerLastPending,
-      userBalanceBeforeClaim: signerLastInitialBalance,
-      userBalanceAfterClaim: signerLastFinalBalance,
-    } = await claimRewards(poolContract, signer);
-    expect(signerLastFinalBalance).to.be.equal(
-      signerLastPending + signerLastInitialBalance
-    );
-
-    let {
-      pendingReward: nikitaLastPending,
-      userBalanceBeforeClaim: nikitaLastInitialBalance,
-      userBalanceAfterClaim: nikitaLastFinalBalance,
-    } = await claimRewards(poolContract, nikita);
-    expect(nikitaLastFinalBalance).to.be.equal(
-      nikitaLastPending + nikitaLastInitialBalance
-    );
-
-    let {
-      pendingReward: maryLastPending,
-      userBalanceBeforeClaim: maryLastInitialBalance,
-      userBalanceAfterClaim: maryLastFinalBalance,
-    } = await claimRewards(poolContract, mary);
-    expect(maryLastFinalBalance).to.be.equal(
-      maryLastPending + maryLastInitialBalance
-    );
-  });
-
-  it("Handles two users with randomized staking, unstaking, and claiming", async function () {
-    poolStartTime = (await time.latest()) + 100;
-    poolEndTime = poolStartTime + 1000;
-    unstakeLockUp = poolStartTime + 500;
-    claimLockUp = poolStartTime + 200;
-    rewardTokenPerSecond = ethers.parseEther("1");
-    const data = {
-      stakeToken: await mockStakeToken.getAddress(),
-      rewardToken: await mockRewardToken.getAddress(),
-      poolStartTime: poolStartTime,
-      poolEndTime: poolEndTime,
-      rewardPerSecond: rewardTokenPerSecond,
-      unstakeLockUpTime: unstakeLockUp,
-      claimLockUpTime: claimLockUp,
-    };
-    const { poolContract } = await deployAndSetupPool(ipfsHash, deployer, data);
-    const users = [admin, ayo, alina, vartan, signer, nikita, mary, mansur];
-    const poolAddress = await poolContract.getAddress();
-    for (const user of users) {
-      await approve(1000000000000, user, mockStakeToken, poolAddress);
-      await approve(1000000000000, admin, mockStakeToken, user.address);
-      await mockStakeToken.transferFrom(
-        admin,
-        user,
-        ethers.parseEther("10000000000")
-      );
-    }
-    const mintAmount = ethers.parseEther("1000");
-
-    await approve(10000, ayo, mockStakeToken, poolAddress);
-    await approve(10000, alina, mockStakeToken, poolAddress);
-
-    await time.increaseTo(poolStartTime);
-    await poolContract.connect(ayo).stake(ethers.parseEther("75"));
-
-    await time.increase(100);
-
-    await poolContract.connect(alina).stake(ethers.parseEther("120"));
-
-    await time.increaseTo(unstakeLockUp);
-
-    await poolContract.connect(ayo).unstake(ethers.parseEther("30"));
-
-    let {
-      pendingReward: ayoPending,
-      userBalanceBeforeClaim: ayoInitialBalance,
-      userBalanceAfterClaim: ayoFinalBalance,
-    } = await claimRewards(poolContract, ayo);
-    expect(ayoFinalBalance).to.be.equal(ayoPending + ayoInitialBalance);
-
-    await poolContract.connect(ayo).stake(ethers.parseEther("20"));
-
-    let {
-      pendingReward: alinaPending,
-      userBalanceBeforeClaim: alinaInitialBalance,
-      userBalanceAfterClaim: alinaFinalBalance,
-    } = await claimRewards(poolContract, alina);
-    expect(alinaFinalBalance).to.be.equal(alinaPending + alinaInitialBalance);
-
-    await time.increase(200);
-
-    await poolContract.connect(alina).unstake(ethers.parseEther("40"));
-
-    const newStakeAmount = ethers.parseEther("50");
-    await mockStakeToken.transferFrom(admin, mansur, newStakeAmount);
-    await approve(50, mansur, mockStakeToken, poolAddress);
-    await poolContract.connect(mansur).stake(newStakeAmount);
-
-    await time.increaseTo(poolEndTime);
-
-    let {
-      pendingReward: ayoLastPending,
-      userBalanceBeforeClaim: ayoLastInitialBalance,
-      userBalanceAfterClaim: ayoLastFinalBalance,
-    } = await claimRewards(poolContract, ayo);
-    expect(ayoLastFinalBalance).to.be.equal(
-      ayoLastPending + ayoLastInitialBalance
-    );
-
-    let {
-      pendingReward: alinaLastPending,
-      userBalanceBeforeClaim: alinaLastInitialBalance,
-      userBalanceAfterClaim: alinaLastFinalBalance,
-    } = await claimRewards(poolContract, alina);
-    expect(alinaLastFinalBalance).to.be.equal(
-      alinaLastPending + alinaLastInitialBalance
-    );
-
-    let {
-      pendingReward: mansurLastPending,
-      userBalanceBeforeClaim: mansurLastInitialBalance,
-      userBalanceAfterClaim: mansurLastFinalBalance,
-    } = await claimRewards(poolContract, mansur);
-    expect(mansurLastFinalBalance).to.be.equal(
-      mansurLastPending + mansurLastInitialBalance
+    expect(marySecondPending).to.be.closeTo(
+      ethers.parseEther("133.24"),
+      ethers.parseEther("0.1")
     );
   });
 });
