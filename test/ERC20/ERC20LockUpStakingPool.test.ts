@@ -8,7 +8,7 @@ import {
   ERC20MockToken,
   ERC20LockUpStakingFactory,
   ERC20LockUpStakingFactory__factory,
-} from "../typechain";
+} from "../../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BigNumberish, BytesLike, parseEther } from "ethers";
 
