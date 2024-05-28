@@ -146,7 +146,7 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPoolError
             pool.totalClaimed += pending;
             pool.totalPenalties += penalityAmount;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending);
+            emit PenaltyClaim(msg.sender, pending, penalityAmount, pool.totalPenalties);
         } else {
             revert NothingToClaim();
         }

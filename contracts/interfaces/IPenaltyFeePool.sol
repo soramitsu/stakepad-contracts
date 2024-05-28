@@ -12,7 +12,7 @@ interface IPenaltyFeePoolStorage {
      * @dev rewardDebt Used to calculate rewards efficiently
      * @dev pending The amount of rewards pending for the user
      */
-     struct UserInfo {
+    struct UserInfo {
         uint256 amount;
         uint256 claimed;
         uint256 rewardDebt;
@@ -47,15 +47,30 @@ interface IPenaltyFeePoolStorage {
         uint256 accRewardPerShare;
         address adminWallet;
     }
-    
+
     /**
      *  EVENTS
      */
-    
+
     /**
      * @notice Event to notify when an admin claims accumulated fees
      * @dev Emitted in 'claim' function
      * @param amount The amount of fees claimed
      */
     event FeeClaim(uint256 amount);
+
+    /**
+     * @notice Event to notify when a user claims rewards in penalty pool
+     * @dev Emitted in 'claim' function
+     * @param user The address of the user who claims rewards
+     * @param amount The amount of rewards claimed
+     * @param amount The amount of rewards claimed
+     * @param amount The amount of rewards claimed
+     */
+    event PenaltyClaim(
+        address indexed user,
+        uint256 amount,
+        uint256 penalityAmount,
+        uint256 totalPenalties
+    );
 }
