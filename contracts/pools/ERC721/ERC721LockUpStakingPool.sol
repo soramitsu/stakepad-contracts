@@ -176,7 +176,7 @@ contract ERC721LockUpPool is
             }
             pool.totalClaimed += pending;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending);
+            emit Claim(msg.sender, pending, 0, 0);
         } else {
             revert NothingToClaim();
         }

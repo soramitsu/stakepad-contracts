@@ -72,18 +72,5 @@ interface IPenaltyFeePoolStorage {
      */
     event FeeClaim(uint256 amount);
 
-    /**
-     * @notice Event to notify when a user claims rewards in penalty pool
-     * @dev Emitted in 'claim' function
-     * @param user The address of the user who claims rewards
-     * @param amount The amount of rewards claimed
-     * @param amount The amount of rewards claimed
-     * @param amount The amount of rewards claimed
-     */
-    event PenaltyClaim(
-        address indexed user,
-        uint256 amount,
-        uint256 penalityAmount,
-        uint256 totalPenalties
-    );
+    
 }
