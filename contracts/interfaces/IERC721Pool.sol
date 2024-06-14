@@ -70,8 +70,15 @@ interface IPoolERC721 {
      * @notice Event emitted when a user claims their rewards.
      * @param user The address of the user who claimed the rewards.
      * @param pending The amount of rewards claimed.
+     * @param penaltyAmount The amount deducted as penalty fee
+     * @param totalPenalties The total amount of deducted penalty fee
      */
-    event Claim(address indexed user, uint256 pending);
+    event Claim(
+        address indexed user, 
+        uint256 pending,
+        uint256 penaltyAmount,
+        uint256 totalPenalties
+    );
 
     /**
      * @notice Event emitted when the pool parameters are updated

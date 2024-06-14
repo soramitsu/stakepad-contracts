@@ -53,8 +53,15 @@ interface IPoolERC20 {
      * @dev Emitted in 'claim' function
      * @param user The address of the user who claims rewards
      * @param amount The amount of rewards claimed
+     * @param penaltyAmount The amount deducted as penalty fee
+     * @param totalPenalties The total amount of deducted penalty fee
      */
-    event Claim(address indexed user, uint256 amount);
+    event Claim(
+        address indexed user, 
+        uint256 amount, 
+        uint256 penaltyAmount,
+        uint256 totalPenalties
+    );
 
     /**
      * @notice Event to notify when the staking pool is updated
