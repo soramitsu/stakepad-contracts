@@ -133,19 +133,19 @@ contract ERC20PenaltyFeePool is ReentrancyGuard, Ownable, IPoolERC20, IPenaltyFe
         }
         if (pending > 0) {
             user.pending = 0;
-            uint256 penalityAmount = _calculatePenalizedAmount(
+            uint256 penaltyAmount = _calculatePenalizedAmount(
                 user.penalized,
                 pending
             );
-            pending -= penalityAmount;
+            pending -= penaltyAmount;
             if (user.penalized) user.penalized = false;
             unchecked {
                 user.claimed += pending;
             }
             pool.totalClaimed += pending;
-            pool.totalPenalties += penalityAmount;
+            pool.totalPenalties += penaltyAmount;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-            emit PenaltyClaim(msg.sender, pending, penalityAmount, pool.totalPenalties);
+            emit Claim(msg.sender, pending, penaltyAmount, pool.totalPenalties);
         } else {
             revert NothingToClaim();
         }
