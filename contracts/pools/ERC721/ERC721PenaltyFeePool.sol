@@ -181,7 +181,7 @@ contract draftERC721PenaltyFeepPool is
             pool.totalClaimed += pending;
             pool.totalPenalties += penaltyAmount;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending, penaltyAmount, pool.totalPenalties);
+            emit Claim(msg.sender, pending, penaltyAmount);
         } else {
             revert NothingToClaim();
         }
