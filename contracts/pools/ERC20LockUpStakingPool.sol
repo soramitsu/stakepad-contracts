@@ -167,7 +167,7 @@ contract ERC20LockUpPool is ReentrancyGuard, Ownable, IPoolERC20, ILockUpPoolSto
             }
             pool.totalClaimed += pending;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending, 0, 0);
+            emit Claim(msg.sender, pending, 0);
         } else {
             revert NothingToClaim();
         }
