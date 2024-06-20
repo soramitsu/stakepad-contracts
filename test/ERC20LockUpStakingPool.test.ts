@@ -36,9 +36,9 @@ describe("Contract Deployment", async function () {
   let poolEndTime: number;
   let ipfsHash: BytesLike;
   let signer: HardhatEthersSigner;
-  let userA: HardhatEthersSigner;
-  let userB: HardhatEthersSigner;
-  let userC: HardhatEthersSigner;
+  let user_A: HardhatEthersSigner;
+  let user_B: HardhatEthersSigner;
+  let user_C: HardhatEthersSigner;
   let poolContract: ERC20LockUpPool;
 
   before(async () => {
@@ -51,7 +51,7 @@ describe("Contract Deployment", async function () {
     rewardTokenPerSecond = ethers.parseEther("1");
     poolStartTime = blockTimestamp;
     poolEndTime = blockTimestamp;
-    [signer, userA, userB, userC] = await ethers.getSigners();
+    [signer, user_A, user_B, user_C] = await ethers.getSigners();
 
     mockStakeToken = await ethers.deployContract("ERC20MockToken", [
       "StakeToken",
@@ -71,15 +71,15 @@ describe("Contract Deployment", async function () {
     );
 
     await mockStakeToken.transfer(
-      userA.address,
+      user_A.address,
       ethers.parseEther("10000")
     );
 
-    await mockStakeToken.transfer(userB.address, ethers.parseEther("10000"));
-    await mockStakeToken.transfer(userC.address, ethers.parseEther("10000"));
+    await mockStakeToken.transfer(user_B.address, ethers.parseEther("10000"));
+    await mockStakeToken.transfer(user_C.address, ethers.parseEther("10000"));
 
     await mockRewardToken.mint(
-      userA.address,
+      user_A.address,
       ethers.parseEther("2000000000")
     );
   });
@@ -98,7 +98,7 @@ describe("Contract Deployment", async function () {
         rewardPerSecond: rewardTokenPerSecond
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -116,7 +116,7 @@ describe("Contract Deployment", async function () {
         rewardPerSecond: rewardTokenPerSecond
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -134,7 +134,7 @@ describe("Contract Deployment", async function () {
         rewardPerSecond: ethers.toBigInt(0)
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -153,18 +153,18 @@ describe("Contract Deployment", async function () {
       }
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(length, user_A.address, 1, values);
       length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(length).to.be.equal(1);
       expect(req.info.requestStatus).to.be.equal(1);
-      expect(req.info.deployer).to.be.equal(userA.address);
+      expect(req.info.deployer).to.be.equal(user_A.address);
       expect(req.data).to.be.deep.equal(values);
     });
 
     it("Request approval failed: invalid caller", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(userA).approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "OwnableUnauthorizedAccount");
+      await expect(ercStakingPoolFactory.connect(user_A).approveRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "OwnableUnauthorizedAccount");
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(1);
     });
@@ -194,25 +194,25 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(3);
-      await expect(ercStakingPoolFactory.connect(userB).deploy(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidCaller");
+      await expect(ercStakingPoolFactory.connect(user_B).deploy(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidCaller");
     });
 
     it("Deploy failed: invalid id", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(3);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(length)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidId");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(length)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidId");
     });
 
     it("Should correctly deploy pool from APPROVED request", async function () {
       await mockRewardToken
-        .connect(userA)
+        .connect(user_A)
         .approve(
           await ercStakingPoolFactory.getAddress(),
           parseEther("2000000000")
         );
       let length = (await ercStakingPoolFactory.getRequests()).length;
-      await expect(ercStakingPoolFactory.connect(userA).deploy(length - 1)).to.emit(ercStakingPoolFactory, "StakingPoolDeployed");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(length - 1)).to.emit(ercStakingPoolFactory, "StakingPoolDeployed");
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(4);
       let poolsLength = (await ercStakingPoolFactory.getPools()).length;
@@ -242,12 +242,12 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, user_A.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       expect(length).to.be.equal(lengthBefore + 1);
 
       await ercStakingPoolFactory.approveRequest(length - 1);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(length - 1)).to.be.revertedWithCustomError(poolContract, "InvalidStartTime");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(length - 1)).to.be.revertedWithCustomError(poolContract, "InvalidStartTime");
       let req = await ercStakingPoolFactory.requests(lengthBefore);
       expect(req.info.requestStatus).to.be.equal(3);
     });
@@ -264,13 +264,13 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, user_A.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
 
       expect(length).to.be.equal(lengthBefore + 1);
 
       await ercStakingPoolFactory.approveRequest(lengthBefore);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidStakingPeriod");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidStakingPeriod");
       let req = await ercStakingPoolFactory.requests(lengthBefore);
       expect(req.info.requestStatus).to.be.equal(3);
     });
@@ -287,13 +287,13 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, user_A.address, 1, values);
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(lengthBefore);
       expect(length).to.be.equal(lengthBefore + 1);
       expect(req.info.requestStatus).to.be.equal(1);
       await ercStakingPoolFactory.approveRequest(length - 1);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });
 
     it("Another requests created with wrong claim LockUp time", async function () {
@@ -308,9 +308,9 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, user_A.address, 1, values);
       await ercStakingPoolFactory.approveRequest(lengthBefore);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidLockUpTime");
     });
 
     it("Cancel last approved request failed: caller is not an owner", async function () {
@@ -324,14 +324,14 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(3);
-      await expect(ercStakingPoolFactory.connect(userA).cancelRequest(length + 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidId");
+      await expect(ercStakingPoolFactory.connect(user_A).cancelRequest(length + 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidId");
     });
 
     it("Cancel last approved request", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(3);
-      await expect(ercStakingPoolFactory.connect(userA).cancelRequest(length - 1)).to.be.emit(ercStakingPoolFactory, "RequestStatusChanged");
+      await expect(ercStakingPoolFactory.connect(user_A).cancelRequest(length - 1)).to.be.emit(ercStakingPoolFactory, "RequestStatusChanged");
       req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(5);
     });
@@ -340,7 +340,7 @@ describe("Contract Deployment", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(5);
-      await expect(ercStakingPoolFactory.connect(userA).cancelRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
+      await expect(ercStakingPoolFactory.connect(user_A).cancelRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
     });
 
     it("Another request created with wrong reward rate", async function () {
@@ -355,9 +355,9 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, user_A.address, 1, values);
       await ercStakingPoolFactory.approveRequest(lengthBefore);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidRewardRate");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(lengthBefore)).to.be.revertedWithCustomError(poolContract, "InvalidRewardRate");
     });
 
     it("Another request created", async function () {
@@ -372,21 +372,21 @@ describe("Contract Deployment", async function () {
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
-      await expect(ercStakingPoolFactory.connect(userA).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, userA.address, 1, values);
+      await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.emit(ercStakingPoolFactory, "RequestSubmitted").withArgs(lengthBefore, user_A.address, 1, values);
     });
 
     it("Deploy failed: request was not approved", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(1);
-      await expect(ercStakingPoolFactory.connect(userA).deploy(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
+      await expect(ercStakingPoolFactory.connect(user_A).deploy(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidRequestStatus");
     });
 
     it("Deny last submitted request with wrong data failed: invalid caller", async function () {
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let req = await ercStakingPoolFactory.requests(length - 1);
       expect(req.info.requestStatus).to.be.equal(1);
-      await expect(ercStakingPoolFactory.connect(userA).denyRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "OwnableUnauthorizedAccount");
+      await expect(ercStakingPoolFactory.connect(user_A).denyRequest(length - 1)).to.be.revertedWithCustomError(ercStakingPoolFactory, "OwnableUnauthorizedAccount");
     });
 
     it("Deny last submitted request with wrong data failed: invalid id", async function () {
@@ -431,31 +431,31 @@ describe("Contract Deployment", async function () {
       let amount = ethers.parseEther("100");
       //Approve user to transfer tokens
       await mockStakeToken
-        .connect(userA)
+        .connect(user_A)
         .approve(
           poolContract.getAddress(),
           amount
         );
 
       //Stake
-      await expect(poolContract.connect(userA).stake(amount)).emit(
+      await expect(poolContract.connect(user_A).stake(amount)).emit(
         poolContract,
         "Stake"
-      ).withArgs(userA.address, amount);
+      ).withArgs(user_A.address, amount);
       expect((await poolContract.pool()).totalStaked).to.equal(amount);
     });
 
     it("Unstake failed: tokens in lockup", async function () {
       let amount = ethers.parseEther("50");
       await expect(
-        poolContract.connect(userA).unstake(amount)
+        poolContract.connect(user_A).unstake(amount)
       ).to.be.revertedWithCustomError(poolContract, "TokensInLockUp");
     });
 
     it("Claim failed: tokens in lockup", async function () {
       await time.increase(5);
       await expect(
-        poolContract.connect(userA).claim()
+        poolContract.connect(user_A).claim()
       ).to.be.revertedWithCustomError(poolContract, "TokensInLockUp");
     });
 
@@ -464,46 +464,46 @@ describe("Contract Deployment", async function () {
       let amount = ethers.parseEther("100");
       let totalStaked = (await poolContract.pool()).totalStaked
       await expect(
-        poolContract.connect(userA).unstake(amount)
-      ).emit(poolContract, "Unstake").withArgs(userA.address, amount);
+        poolContract.connect(user_A).unstake(amount)
+      ).emit(poolContract, "Unstake").withArgs(user_A.address, amount);
       expect((await poolContract.pool()).totalStaked).to.equal(totalStaked - amount);
     });
 
     it("Pending Rewards", async function () {
       console.log("Current Time:", await time.latest());
-      expect(await poolContract.pendingRewards(userA.address)).to.be.equal(ethers.parseEther("33"));
+      expect(await poolContract.pendingRewards(user_A.address)).to.be.equal(ethers.parseEther("33"));
       // Reward are the same within the same block
-      expect(await poolContract.pendingRewards(userA.address)).to.be.equal(ethers.parseEther("33"));
+      expect(await poolContract.pendingRewards(user_A.address)).to.be.equal(ethers.parseEther("33"));
     })
 
     it("Claim Rewards: Reward Token balance should increase by amount claimed", async function () {
-      let initialBalance = await mockRewardToken.balanceOf(userA.address)
-      await expect(poolContract.connect(userA).claim()).emit(poolContract, "Claim");
-      let newBalance = await mockRewardToken.balanceOf(userA.address)
-      expect(newBalance).to.be.equal(initialBalance + (await poolContract.userInfo(userA.getAddress())).claimed)
+      let initialBalance = await mockRewardToken.balanceOf(user_A.address)
+      await expect(poolContract.connect(user_A).claim()).emit(poolContract, "Claim");
+      let newBalance = await mockRewardToken.balanceOf(user_A.address)
+      expect(newBalance).to.be.equal(initialBalance + (await poolContract.userInfo(user_A.getAddress())).claimed)
     })
 
     it("New user stakes", async function () {
       let initialTotalStaked = (await poolContract.pool()).totalStaked;
-      await mockStakeToken.connect(userB).approve(poolContract.getAddress(), ethers.parseEther("10000"))
-      await expect(poolContract.connect(userB).stake(ethers.parseEther("100"))).emit(poolContract, "Stake").withArgs(userB.address, ethers.parseEther("100"));
+      await mockStakeToken.connect(user_B).approve(poolContract.getAddress(), ethers.parseEther("10000"))
+      await expect(poolContract.connect(user_B).stake(ethers.parseEther("100"))).emit(poolContract, "Stake").withArgs(user_B.address, ethers.parseEther("100"));
       expect((await poolContract.pool()).totalStaked).to.be.greaterThan(initialTotalStaked)
     });
 
     it("Unstake failed: Invalid amount", async function () {
-      await expect(poolContract.connect(userB).unstake(0)).revertedWithCustomError(poolContract, "InvalidAmount");
+      await expect(poolContract.connect(user_B).unstake(0)).revertedWithCustomError(poolContract, "InvalidAmount");
     });
 
     it("Unstake failed: Attempt to unstake more than staked", async function () {
-      await expect(poolContract.connect(userB).unstake(ethers.parseEther("10000"))).revertedWithCustomError(poolContract, "InsufficientAmount");
+      await expect(poolContract.connect(user_B).unstake(ethers.parseEther("10000"))).revertedWithCustomError(poolContract, "InsufficientAmount");
     });
 
     it("Should correctly calculate rewards and match pendingRewards()", async function () {
       // Calculate rewards outside the contract (emulating pendingRewards logic)
-      let userAUser = await poolContract.userInfo(userA.address);
+      let user_AUser = await poolContract.userInfo(user_A.address);
       const currentTimestamp = await time.latest();
 
-      const pendingRewards = await poolContract.pendingRewards(userA.address);
+      const pendingRewards = await poolContract.pendingRewards(user_A.address);
       let accRewardPerShare = (await poolContract.pool()).accRewardPerShare;
 
       let stakingPool = await poolContract.pool()
@@ -513,16 +513,16 @@ describe("Contract Deployment", async function () {
         accRewardPerShare += (totalNewReward * PRECISION_FACTOR) / stakingPool.totalStaked;
       }
 
-      const calculatedRewards = ((userAUser.amount * accRewardPerShare) / PRECISION_FACTOR) - userAUser.rewardDebt;
+      const calculatedRewards = ((user_AUser.amount * accRewardPerShare) / PRECISION_FACTOR) - user_AUser.rewardDebt;
       // Compare with the output of pendingRewards()
       console.log("Calculated rewards: " + calculatedRewards, "Pending Rewards: " + pendingRewards)
       expect(calculatedRewards).to.be.closeTo(pendingRewards, ethers.parseEther("0.1")); // Adjust if needed
     });
 
     it("Claim failed: User have nothing to claim right after he has already claimed and ustaked", async function () {
-      await expect(poolContract.connect(userB).unstake(ethers.parseEther("100"))).emit(poolContract, "Unstake").withArgs(userB.address, ethers.parseEther("100"));
-      await poolContract.connect(userB).claim();
-      await expect(poolContract.connect(userB).claim()).revertedWithCustomError(poolContract, "NothingToClaim");
+      await expect(poolContract.connect(user_B).unstake(ethers.parseEther("100"))).emit(poolContract, "Unstake").withArgs(user_B.address, ethers.parseEther("100"));
+      await poolContract.connect(user_B).claim();
+      await expect(poolContract.connect(user_B).claim()).revertedWithCustomError(poolContract, "NothingToClaim");
     });
 
     it("Stake fail: pool is over)", async function () {
