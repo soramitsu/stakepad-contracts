@@ -72,7 +72,6 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     ) external {
         if (data.stakeToken == address(0) || data.rewardToken == address(0))
             revert InvalidTokenAddress();
-        if (data.rewardPerSecond == 0) revert InvalidRewardRate();
         requests.push(
             LockUpRequest({
                 info: RequestInfo({
@@ -93,7 +92,7 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     }
 
     function approveRequest(uint256 id) external onlyOwner {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
         if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         req.info.requestStatus = Status.APPROVED;
@@ -101,7 +100,7 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     }
 
     function denyRequest(uint256 id) external onlyOwner {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
         if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         req.info.requestStatus = Status.DENIED;
@@ -109,7 +108,7 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     }
 
     function cancelRequest(uint256 id) external {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
         if (msg.sender != req.info.deployer) revert InvalidCaller();
         if (

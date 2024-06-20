@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC20LockUpPool} from "../pools/ERC20LockUpStakingPool.sol";
+import {ERC20LockUpPool} from "../pools/ERC20/ERC20LockUpStakingPool.sol";
 import {ILockUpFactory} from "../interfaces/IFactories/ILockUpFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -24,7 +24,7 @@ contract ERC20LockUpStakingFactory is Ownable, ILockUpFactory {
 
     /// @notice Function allows users to deploy the LockUp staking pool with specified parameters
     function deploy(uint256 id) public returns (address newPoolAddress) {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest memory req = requests[id];
         if (req.info.requestStatus != Status.APPROVED)
             revert InvalidRequestStatus();
@@ -72,7 +72,6 @@ contract ERC20LockUpStakingFactory is Ownable, ILockUpFactory {
     ) external {
         if (data.stakeToken == address(0) || data.rewardToken == address(0))
             revert InvalidTokenAddress();
-        if (data.rewardPerSecond == 0) revert InvalidRewardRate();
         requests.push(
             LockUpRequest({
                 info: RequestInfo({
@@ -93,7 +92,7 @@ contract ERC20LockUpStakingFactory is Ownable, ILockUpFactory {
     }
 
     function approveRequest(uint256 id) external onlyOwner {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
         if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         req.info.requestStatus = Status.APPROVED;
@@ -101,7 +100,7 @@ contract ERC20LockUpStakingFactory is Ownable, ILockUpFactory {
     }
 
     function denyRequest(uint256 id) external onlyOwner {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
         if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         req.info.requestStatus = Status.DENIED;
@@ -109,7 +108,7 @@ contract ERC20LockUpStakingFactory is Ownable, ILockUpFactory {
     }
 
     function cancelRequest(uint256 id) external {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
         if (msg.sender != req.info.deployer) revert InvalidCaller();
         if (

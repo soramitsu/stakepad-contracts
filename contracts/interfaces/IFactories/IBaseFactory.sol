@@ -20,8 +20,10 @@ interface IBaseFactory {
     error InvalidRequestStatus();
     error InvalidCaller();
     error InvalidTokenAddress();
-    error InvalidRewardRate();
-    
-    event StakingPoolDeployed(address indexed stakingAddress, uint256 indexed id);
+
+    event StakingPoolDeployed(
+        address indexed stakingAddress,
+        uint256 indexed id
+    );
     event RequestStatusChanged(uint256 indexed id, Status indexed status);
 }

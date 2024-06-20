@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-
 interface ILockUpPoolStorage {
     /**
      * @notice Storage for a user's staking information
@@ -13,7 +9,7 @@ interface ILockUpPoolStorage {
      * @dev rewardDebt Used to calculate rewards efficiently
      * @dev pending The amount of rewards pending for the user
      */
-     struct UserInfo {
+    struct UserInfo {
         uint256 amount;
         uint256 claimed;
         uint256 rewardDebt;
@@ -47,4 +43,8 @@ interface ILockUpPoolStorage {
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
     }
+
+    /**
+     *  ERROR MESSAGES
+     */
 }
