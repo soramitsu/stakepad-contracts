@@ -30,6 +30,9 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY as string],
       chainId: 80002,
     },
+    hardhat: {
+      allowBlocksWithSameTimestamp: true
+    }
   },
   etherscan: {
     apiKey: { amoy: process.env.AMOY_API_KEY as string },
