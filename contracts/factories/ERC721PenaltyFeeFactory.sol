@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {draftERC721PenaltyFeepPool} from "../pools/ERC721/ERC721PenaltyFeePool.sol";
+import {ERC721PenaltyFeepPool} from "../pools/ERC721/ERC721PenaltyFeePool.sol";
 import {IPenaltyFeeFactory} from "../interfaces/IFactories/IPenaltyFeeFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -29,7 +29,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         if (req.info.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.info.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new draftERC721PenaltyFeepPool{
+            new ERC721PenaltyFeepPool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -50,14 +50,13 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
             )
         );
         stakingPools.push(newPoolAddress);
-        draftERC721PenaltyFeepPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC721PenaltyFeepPool(newPoolAddress).transferOwnership(msg.sender);
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 
     function requestDeployment(bytes32 ipfsHash, DeploymentData calldata data) external {
         if (data.stakeToken == address(0) || data.rewardToken == address(0))
             revert InvalidTokenAddress();
-        if (data.rewardPerSecond == 0) revert InvalidRewardRate();
         requests.push(
             PenaltyFeeRequest({
                 info: RequestInfo({
@@ -77,7 +76,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     }
 
     function approveRequest(uint256 id) external onlyOwner {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         PenaltyFeeRequest storage req = requests[id];
         if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         req.info.requestStatus = Status.APPROVED;
@@ -85,7 +84,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     }
 
     function denyRequest(uint256 id) external onlyOwner {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         PenaltyFeeRequest storage req = requests[id];
         if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
         req.info.requestStatus = Status.DENIED;
@@ -93,7 +92,7 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     }
 
     function cancelRequest(uint256 id) external {
-        if (requests.length < id) revert InvalidId();
+        if (requests.length <= id) revert InvalidId();
         PenaltyFeeRequest storage req = requests[id];
         if (msg.sender != req.info.deployer) revert InvalidCaller();
         if (

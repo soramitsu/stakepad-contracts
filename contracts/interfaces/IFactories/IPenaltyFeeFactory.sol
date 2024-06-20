@@ -3,7 +3,6 @@ pragma solidity 0.8.25;
 import {IBaseFactory} from "./IBaseFactory.sol";
 
 interface IPenaltyFeeFactory is IBaseFactory {
-    
     struct DeploymentData {
         address stakeToken;
         address rewardToken;
@@ -18,5 +17,10 @@ interface IPenaltyFeeFactory is IBaseFactory {
         DeploymentData data;
     }
 
-    event RequestSubmitted(uint256 indexed id, address indexed deployer, Status indexed status, DeploymentData data);
+    event RequestSubmitted(
+        uint256 indexed id,
+        address indexed deployer,
+        Status indexed status,
+        DeploymentData data
+    );
 }

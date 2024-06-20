@@ -6,20 +6,27 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IPoolERC721} from "../../interfaces/IERC721Pool.sol";
-import {IPenaltyFeePoolStorage} from "../../interfaces/IPenaltyFeePool.sol";
+import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
+import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
+import {IPenaltyFeePoolStorage} from "../../interfaces/IPools/IPenaltyFeePool.sol";
 
-contract draftERC721PenaltyFeepPool is
+contract ERC721PenaltyFeepPool is
     ReentrancyGuard,
     Ownable,
     IPoolERC721,
-    IPenaltyFeePoolStorage
+    IPenaltyFeePoolStorage,
+    IPoolErrors
 {
     using SafeERC20 for IERC20;
     /// @dev Precision factor for calculations
     uint256 public constant PRECISION_FACTOR = 10e18;
     uint256 public constant PENALTY_FEE = 2500;
     uint256 public constant COLLECTABLE_FEE = 100;
+
+    modifier onlyAdmin() {
+        if (msg.sender != pool.adminWallet) revert NotAdmin();
+        _;
+    }
 
     /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
     modifier validPool() {
@@ -30,7 +37,7 @@ contract draftERC721PenaltyFeepPool is
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
     ///@dev stakedTokens: Mapping tokenIds to owner addresses
-    mapping(uint256 => address) stakedTokens;
+    mapping(uint256 => address) ownerById;
 
     PenaltyPool public pool;
 
@@ -90,7 +97,7 @@ contract draftERC721PenaltyFeepPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < amount; i++) {
-            stakedTokens[tokenIds[i]] = msg.sender;
+            ownerById[tokenIds[i]] = msg.sender;
         }
 
         // Interactions: Transfer the tokens after state changes
@@ -128,9 +135,8 @@ contract draftERC721PenaltyFeepPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < length; i++) {
-            if (stakedTokens[tokenIds[i]] != msg.sender)
-                revert NotStaker();
-            delete stakedTokens[tokenIds[i]];
+            if (ownerById[tokenIds[i]] != msg.sender) revert NotStaker();
+            delete ownerById[tokenIds[i]];
         }
 
         // Interactions: Transfer the tokens after state changes
@@ -152,7 +158,7 @@ contract draftERC721PenaltyFeepPool is
         UserInfo storage user = userInfo[msg.sender];
         // Check if the current timestamp is before the claim LockUp time
         if (block.timestamp < user.penaltyEndTime)
-            revert ClaimInLockUp(block.timestamp, user.penaltyEndTime);
+            revert TokensInLockUp(block.timestamp, user.penaltyEndTime);
         // Update the pool
         _updatePool();
         uint256 amount = user.amount;
@@ -185,6 +191,14 @@ contract draftERC721PenaltyFeepPool is
         } else {
             revert NothingToClaim();
         }
+    }
+
+    function claimFee() external nonReentrant onlyAdmin {
+        uint256 penaltyAmount = pool.totalPenalties;
+        if (penaltyAmount == 0) revert NothingToClaim();
+        pool.totalPenalties = 0;
+        IERC20(pool.rewardToken).safeTransfer(pool.adminWallet, penaltyAmount);
+        emit FeeClaim(penaltyAmount);
     }
 
     function pendingRewards(
