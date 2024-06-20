@@ -1,56 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 interface IPoolERC721 {
-    /**
-     *  ERROR MESSAGES
-     */
-
-    /**
-     * @dev Error to indicate an invalid staking period
-     */
-    error InvalidStakingPeriod();
-
-    /**
-     * @dev Error to indicate an invalid start time for the staking pool
-     */
-    error InvalidStartTime();
-
-    /**
-     * @notice Error emitted when attempting to stake zero tokens.
-     */
-    error InvalidAmount();
-
-    /**
-     * @dev Error to indicate insufficient amount of tokens
-     * @param reqAmount The amount of tokens that is required
-     * @param currentAmount The current amount of tokens
-     */
-    error InsufficientAmount(uint256 reqAmount, uint256 currentAmount);
-
-    /**
-     * @notice Error emitted when a user other than the owner of a token attempts to unstake it.
-     */
-    error NotStaker();
-
-    /**
-     * @notice Error emitted when attempting to claim rewards but there are none available.
-     */
-    error NothingToClaim();
-
-    /**
-     * @notice Error emitted when attempting an operation before the pool has started.
-     */
-    error PoolNotStarted();
-
-    /**
-     * @notice Error emitted when attempting an operation after the pool has ended.
-     */
-    error PoolHasEnded();
-    
     // **Events**
     /**
      * @notice Event emitted when tokens are staked into the pool.
@@ -70,8 +21,9 @@ interface IPoolERC721 {
      * @notice Event emitted when a user claims their rewards.
      * @param user The address of the user who claimed the rewards.
      * @param pending The amount of rewards claimed.
+     * @param penaltyAmount The amount deducted as penalty fee
      */
-    event Claim(address indexed user, uint256 pending);
+    event Claim(address indexed user, uint256 pending, uint256 penaltyAmount);
 
     /**
      * @notice Event emitted when the pool parameters are updated

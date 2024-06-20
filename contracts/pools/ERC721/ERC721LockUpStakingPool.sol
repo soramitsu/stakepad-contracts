@@ -6,14 +6,16 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IPoolERC721} from "../../interfaces/IERC721Pool.sol";
-import {ILockUpPoolStorage} from "../../interfaces/ILockUpPool.sol";
+import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
+import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
+import {ILockUpPoolStorage} from "../../interfaces/IPools/ILockUpPool.sol";
 
 contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
     IPoolERC721,
-    ILockUpPoolStorage
+    ILockUpPoolStorage,
+    IPoolErrors
 {
     using SafeERC20 for IERC20;
     /// @dev Precision factor for calculations
@@ -28,7 +30,7 @@ contract ERC721LockUpPool is
     ///@dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
     ///@dev stakedTokens: Mapping tokenIds to owner addresses
-    mapping(uint256 => address) stakedTokens;
+    mapping(uint256 => address) ownerById;
 
     LockUpPool public pool;
 
@@ -88,7 +90,7 @@ contract ERC721LockUpPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < amount; i++) {
-            stakedTokens[tokenIds[i]] = msg.sender;
+            ownerById[tokenIds[i]] = msg.sender;
         }
 
         // Interactions: Transfer the tokens after state changes
@@ -126,9 +128,8 @@ contract ERC721LockUpPool is
 
         // Update the staked tokens mapping and ensure the state changes are done first
         for (uint256 i = 0; i < length; i++) {
-            if (stakedTokens[tokenIds[i]] != msg.sender)
-                revert NotStaker();
-            delete stakedTokens[tokenIds[i]];
+            if (ownerById[tokenIds[i]] != msg.sender) revert NotStaker();
+            delete ownerById[tokenIds[i]];
         }
 
         // Interactions: Transfer the tokens after state changes
@@ -176,7 +177,7 @@ contract ERC721LockUpPool is
             }
             pool.totalClaimed += pending;
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
-            emit Claim(msg.sender, pending);
+            emit Claim(msg.sender, pending, 0);
         } else {
             revert NothingToClaim();
         }
