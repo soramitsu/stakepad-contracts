@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
 import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
 import {IPenaltyFeePoolStorage} from "../../interfaces/IPools/IPenaltyFeePool.sol";
@@ -14,7 +13,6 @@ import {IPenaltyFeePoolStorage} from "../../interfaces/IPools/IPenaltyFeePool.so
 contract ERC721PenaltyFeepPool is
     ReentrancyGuard,
     Ownable,
-    IERC721Receiver,
     IPoolERC721,
     IPenaltyFeePoolStorage,
     IPoolErrors
@@ -57,7 +55,7 @@ contract ERC721PenaltyFeepPool is
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the LockUp periods are valid
-        if (poolStartTime + penaltyPeriod > poolEndTime)
+        if (poolEndTime - poolStartTime > penaltyPeriod)
             revert InvalidPenaltyPeriod();
 
         pool.stakeToken = stakeToken;
@@ -68,15 +66,6 @@ contract ERC721PenaltyFeepPool is
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastUpdateTimestamp = poolStartTime;
         pool.adminWallet = adminAddress;
-    }
-
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public virtual override returns (bytes4) {
-        return this.onERC721Received.selector;
     }
 
     /**

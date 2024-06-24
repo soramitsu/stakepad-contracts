@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
 import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
 import {ILockUpPoolStorage} from "../../interfaces/IPools/ILockUpPool.sol";
@@ -14,7 +13,6 @@ import {ILockUpPoolStorage} from "../../interfaces/IPools/ILockUpPool.sol";
 contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
-    IERC721Receiver,
     IPoolERC721,
     ILockUpPoolStorage,
     IPoolErrors
@@ -39,14 +37,14 @@ contract ERC721LockUpPool is
     constructor(
         address stakeToken,
         address rewardToken,
+        uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
         uint256 unstakeLockUpTime,
-        uint256 claimLockUpTime,
-        uint256 rewardTokenPerSecond
+        uint256 claimLockUpTime
     ) Ownable(msg.sender) {
         // Ensure the staking period is valid
-        if (poolStartTime >= poolEndTime) revert InvalidStakingPeriod();
+        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the LockUp periods are valid
@@ -61,15 +59,6 @@ contract ERC721LockUpPool is
         pool.claimLockUpTime = claimLockUpTime;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastUpdateTimestamp = pool.startTime;
-    }
-
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public virtual override returns (bytes4) {
-        return this.onERC721Received.selector;
     }
 
     /**

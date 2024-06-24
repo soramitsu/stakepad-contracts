@@ -13,7 +13,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// @title ERC721PenaltyFeeStakingFactory
 /// @notice A smart contract for deploying ERC721 staking pools with penalty fees.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
+contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
     using SafeERC20 for IERC20;
 
     address[] public stakingPools;
