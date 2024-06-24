@@ -56,7 +56,7 @@ contract ERC20LockUpPool is
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();
         // Ensure the staking period is valid
-        if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
+        if (poolStartTime >= poolEndTime) revert InvalidStakingPeriod();
         // Ensure the LockUp periods are valid
         if (unstakeLockUp > poolEndTime || claimLockUp > poolEndTime)
             revert InvalidLockUpTime();
