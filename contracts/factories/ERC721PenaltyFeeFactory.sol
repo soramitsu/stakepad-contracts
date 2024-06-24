@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 */
 
 pragma solidity 0.8.25;
-import {ERC721PenaltyFeepPool} from "../pools/ERC721/ERC721PenaltyFeePool.sol";
+import {ERC721PenaltyFeePool} from "../pools/ERC721/ERC721PenaltyFeePool.sol";
 import {IPenaltyFeeFactory} from "../interfaces/IFactories/IPenaltyFeeFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -29,7 +29,7 @@ contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         if (req.info.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.info.deployer) revert InvalidCaller();
         newPoolAddress = address(
-            new ERC721PenaltyFeepPool{
+            new ERC721PenaltyFeePool{
                 salt: keccak256(
                     abi.encode(
                         req.data.stakeToken,
@@ -50,7 +50,7 @@ contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
             )
         );
         stakingPools.push(newPoolAddress);
-        ERC721PenaltyFeepPool(newPoolAddress).transferOwnership(msg.sender);
+        ERC721PenaltyFeePool(newPoolAddress).transferOwnership(msg.sender);
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 

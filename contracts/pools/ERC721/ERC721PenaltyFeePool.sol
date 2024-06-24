@@ -11,7 +11,7 @@ import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
 import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
 import {IPenaltyFeePoolStorage} from "../../interfaces/IPools/IPenaltyFeePool.sol";
 
-contract ERC721PenaltyFeepPool is
+contract ERC721PenaltyFeePool is
     ReentrancyGuard,
     Ownable,
     IERC721Receiver,
