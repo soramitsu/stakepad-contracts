@@ -41,9 +41,9 @@ contract ERC721LockUpPool is
         address rewardToken,
         uint256 poolStartTime,
         uint256 poolEndTime,
+        uint256 rewardTokenPerSecond,
         uint256 unstakeLockUpTime,
-        uint256 claimLockUpTime,
-        uint256 rewardTokenPerSecond
+        uint256 claimLockUpTime
     ) Ownable(msg.sender) {
         // Ensure the staking period is valid
         if (poolStartTime >= poolEndTime) revert InvalidStakingPeriod();

@@ -45,9 +45,9 @@ contract ERC20LockUpStakingFactory is Ownable, ILockUpFactory {
                 req.data.rewardToken,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
+                req.data.rewardPerSecond,
                 req.data.unstakeLockUpTime,
-                req.data.claimLockUpTime,
-                req.data.rewardPerSecond
+                req.data.claimLockUpTime
             )
         );
         stakingPools.push(newPoolAddress);

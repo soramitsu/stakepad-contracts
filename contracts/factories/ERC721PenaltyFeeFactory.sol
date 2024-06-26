@@ -42,15 +42,26 @@ contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
             }(
                 req.data.stakeToken,
                 req.data.rewardToken,
-                req.data.rewardPerSecond,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
+                req.data.rewardPerSecond,
                 req.data.penaltyPeriod,
                 owner()
             )
         );
         stakingPools.push(newPoolAddress);
+        requests[id].info.requestStatus = Status.DEPLOYED;
+        poolById[id] = newPoolAddress;
+        uint256 rewardAmount = (req.data.poolEndTime - req.data.poolStartTime) *
+            req.data.rewardPerSecond;
         ERC721PenaltyFeePool(newPoolAddress).transferOwnership(msg.sender);
+        // Transfer reward tokens from the owner to the contract
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(req.data.rewardToken).safeTransferFrom(
+            msg.sender,
+            newPoolAddress,
+            rewardAmount
+        );
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 
