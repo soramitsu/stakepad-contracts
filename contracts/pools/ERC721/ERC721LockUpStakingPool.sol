@@ -121,6 +121,8 @@ contract ERC721LockUpPool is
     function unstake(uint256[] calldata tokenIds) external nonReentrant {
         uint256 length = tokenIds.length;
         if (length == 0) revert InvalidAmount();
+        if (block.timestamp < pool.unstakeLockUpTime)
+            revert TokensInLockUp(block.timestamp, pool.unstakeLockUpTime);
         UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
         if (length > currentAmount)
