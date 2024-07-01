@@ -41,17 +41,17 @@ contract ERC20LockUpPool is
     /// @param rewardToken Address of the ERC20 token used for rewards
     /// @param poolStartTime Start time of the staking pool
     /// @param poolEndTime End time of the staking pool
+    /// @param rewardTokenPerSecond Rate of rewards per second
     /// @param unstakeLockUp LockUp period for unstaking
     /// @param claimLockUp LockUp period for claiming rewards
-    /// @param rewardTokenPerSecond Rate of rewards per second
     constructor(
         address stakeToken,
         address rewardToken,
         uint256 poolStartTime,
         uint256 poolEndTime,
+        uint256 rewardTokenPerSecond,
         uint256 unstakeLockUp,
-        uint256 claimLockUp,
-        uint256 rewardTokenPerSecond
+        uint256 claimLockUp
     ) Ownable(msg.sender) {
         // Ensure the start time is in the future
         if (poolStartTime < block.timestamp) revert InvalidStartTime();

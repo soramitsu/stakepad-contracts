@@ -8,8 +8,8 @@ interface IPenaltyFeeFactory is IBaseFactory {
         address rewardToken;
         uint256 poolStartTime;
         uint256 poolEndTime;
-        uint256 penaltyPeriod;
         uint256 rewardPerSecond;
+        uint256 penaltyPeriod;
     }
 
     struct PenaltyFeeRequest {

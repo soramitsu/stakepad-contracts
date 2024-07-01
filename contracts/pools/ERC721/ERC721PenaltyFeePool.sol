@@ -46,9 +46,9 @@ contract ERC721PenaltyFeePool is
     constructor(
         address stakeToken,
         address rewardToken,
-        uint256 rewardTokenPerSecond,
         uint256 poolStartTime,
         uint256 poolEndTime,
+        uint256 rewardTokenPerSecond,
         uint256 penaltyPeriod,
         address adminAddress
     ) Ownable(msg.sender) {

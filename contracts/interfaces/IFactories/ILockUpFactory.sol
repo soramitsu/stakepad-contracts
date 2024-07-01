@@ -8,9 +8,9 @@ interface ILockUpFactory is IBaseFactory {
         address rewardToken;
         uint256 poolStartTime;
         uint256 poolEndTime;
+        uint256 rewardPerSecond;
         uint256 unstakeLockUpTime; // LockUp period for unstaking
         uint256 claimLockUpTime; // LockUp period for claiming rewards
-        uint256 rewardPerSecond;
     }
 
     struct LockUpRequest {
