@@ -7,11 +7,8 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import {
-  ERC721LockUpPool,
   ERC721MockToken,
   ERC20MockToken,
-  ERC721LockUpStakingFactory,
-  ERC721LockUpStakingFactory__factory,
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BytesLike, ZeroAddress, parseEther } from "ethers";
@@ -58,7 +55,7 @@ describe("ERC721 Penalty Fee Pool Interaction Tests", async function () {
     await mockRewardToken.mint(user_A.address, ethers.parseEther("2000000000"));
   });
 
-  describe("ERC721LockUpStakingPool Deployment and Factory Interactions", async function () {
+  describe("ERC721PenaltyFeeStakingPool Deployment and Factory Interactions", async function () {
     it("Request creation failed: invalid staking token address", async function () {
       poolStartTime += 100;
       poolEndTime = poolStartTime + 120;
@@ -110,8 +107,8 @@ describe("ERC721 Penalty Fee Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolStartTime + 1000,
-        penaltyPeriod: 200,
         rewardPerSecond: ethers.parseEther("1"),
+        penaltyPeriod: 200,
       };
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -223,8 +220,8 @@ describe("ERC721 Penalty Fee Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime - 10000,
         poolEndTime: poolStartTime + 120,
-        penaltyPeriod: 200,
         rewardPerSecond: rewardTokenPerSecond,
+        penaltyPeriod: 200,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -250,8 +247,8 @@ describe("ERC721 Penalty Fee Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 10000,
         poolEndTime: poolStartTime + 120,
-        penaltyPeriod: 200,
         rewardPerSecond: ethers.parseEther("1"),
+        penaltyPeriod: 200,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -309,8 +306,8 @@ describe("ERC721 Penalty Fee Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 10000,
         poolEndTime: poolStartTime + 120,
-        penaltyPeriod: 200,
         rewardPerSecond: ethers.parseEther("1"),
+        penaltyPeriod: 200,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);

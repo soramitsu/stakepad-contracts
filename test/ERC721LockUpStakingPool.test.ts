@@ -75,9 +75,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       await expect(
@@ -98,9 +98,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: ethers.ZeroAddress,
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       await expect(
@@ -121,9 +121,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 30,
         claimLockUpTime: poolStartTime + 30,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -234,9 +234,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime - 10000,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -262,9 +262,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 10000,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -291,9 +291,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolEndTime + 130,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -318,9 +318,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolEndTime + 10,
-        rewardPerSecond: rewardTokenPerSecond,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -382,9 +382,9 @@ describe("ERC721 Lock Up Pool Interaction Tests", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: 0,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: 0,
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
