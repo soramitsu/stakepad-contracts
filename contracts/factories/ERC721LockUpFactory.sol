@@ -12,17 +12,26 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 /// @title ERC721LockUpStakingFactory
 /// @notice A smart contract for deploying ERC721 LockUp staking pools.
+/// @dev This contract uses Ownable for ownership and ILockUpFactory for factory functionality.
 /// @author Ayooluwa Akindeko, Soramitsu team
 contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     using SafeERC20 for IERC20;
 
+    /// @notice Array to store addresses of deployed staking pools.
     address[] public stakingPools;
+
+    /// @notice Array to store requests for staking pools.
     LockUpRequest[] public requests;
+
+    /// @notice Mapping to store pool address by request ID.
     mapping(uint256 id => address pool) public poolById;
 
+    /// @notice Constructor sets the owner of the contract.
     constructor() Ownable(msg.sender) {}
 
-    /// @notice Function allows users to deploy the LockUp staking pool with specified parameters
+    /// @notice Function allows users to deploy the LockUp staking pool with specified parameters.
+    /// @param id ID of the request to be deployed.
+    /// @return newPoolAddress Address of the newly deployed staking pool.
     function deploy(uint256 id) public returns (address newPoolAddress) {
         if (requests.length < id) revert InvalidId();
         LockUpRequest memory req = requests[id];
@@ -66,6 +75,9 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
         emit StakingPoolDeployed(newPoolAddress, id);
     }
 
+    /// @notice Requests deployment of a new LockUp staking pool.
+    /// @param ipfsHash IPFS hash of the request data.
+    /// @param data Deployment data for the staking pool.
     function requestDeployment(
         bytes32 ipfsHash,
         DeploymentData calldata data
@@ -90,6 +102,8 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
         );
     }
 
+    /// @notice Approves a deployment request.
+    /// @param id ID of the request to be approved.
     function approveRequest(uint256 id) external onlyOwner {
         if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
@@ -99,6 +113,8 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
         emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
+    /// @notice Denies a deployment request.
+    /// @param id ID of the request to be denied.
     function denyRequest(uint256 id) external onlyOwner {
         if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
@@ -108,6 +124,8 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
         emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
+    /// @notice Cancels a deployment request.
+    /// @param id ID of the request to be canceled.
     function cancelRequest(uint256 id) external {
         if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
@@ -120,10 +138,14 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
         emit RequestStatusChanged(id, req.info.requestStatus);
     }
 
+    /// @notice Returns all deployment requests.
+    /// @return reqs Array of all LockUp requests.
     function getRequests() external view returns (LockUpRequest[] memory reqs) {
         reqs = requests;
     }
 
+    /// @notice Returns all deployed staking pools.
+    /// @return pools Array of all staking pool addresses.
     function getPools() external view returns (address[] memory pools) {
         pools = stakingPools;
     }
