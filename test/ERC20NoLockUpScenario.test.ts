@@ -60,9 +60,9 @@ describe("ERC20LockupPool Standard Scenario", async function () {
       rewardToken: await mockRewardToken.getAddress(),
       poolStartTime: poolStartTime,
       poolEndTime: poolStartTime + 1000,
-      unstakeLockUpTime: 0,
-      claimLockUpTime: 0,
       rewardPerSecond: ethers.parseEther("1"),
+      unstakeLockUpTime: 0,
+      claimLockUpTime: 0
     };
 
     // Create deployment request
@@ -88,7 +88,6 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     let poolInfo = await erc20LockUpPool.pool();
     // --- Initial Staking (Time = 10 seconds after pool was started)
     await time.increaseTo(poolInfo.startTime + 9n);
-    let scenarioStartTime = await time.latest();
     await erc20LockUpPool.connect(user_A).stake(ethers.parseEther("200"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("200"));
     console.log("1st block timestamp:", (await time.latest() - poolStartTime));

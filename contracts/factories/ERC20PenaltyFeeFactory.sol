@@ -42,9 +42,9 @@ contract ERC20PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
             }(
                 req.data.stakeToken,
                 req.data.rewardToken,
-                req.data.rewardPerSecond,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
+                req.data.rewardPerSecond,
                 req.data.penaltyPeriod,
                 owner()
             )

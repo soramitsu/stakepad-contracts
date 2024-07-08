@@ -45,9 +45,9 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
                 req.data.rewardToken,
                 req.data.poolStartTime,
                 req.data.poolEndTime,
+                req.data.rewardPerSecond,
                 req.data.unstakeLockUpTime,
-                req.data.claimLockUpTime,
-                req.data.rewardPerSecond
+                req.data.claimLockUpTime
             )
         );
         stakingPools.push(newPoolAddress);
@@ -93,7 +93,8 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     function approveRequest(uint256 id) external onlyOwner {
         if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
-        if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
+        if (req.info.requestStatus != Status.CREATED)
+            revert InvalidRequestStatus();
         req.info.requestStatus = Status.APPROVED;
         emit RequestStatusChanged(id, req.info.requestStatus);
     }
@@ -101,7 +102,8 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
     function denyRequest(uint256 id) external onlyOwner {
         if (requests.length <= id) revert InvalidId();
         LockUpRequest storage req = requests[id];
-        if (req.info.requestStatus != Status.CREATED) revert InvalidRequestStatus();
+        if (req.info.requestStatus != Status.CREATED)
+            revert InvalidRequestStatus();
         req.info.requestStatus = Status.DENIED;
         emit RequestStatusChanged(id, req.info.requestStatus);
     }

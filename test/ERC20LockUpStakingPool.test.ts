@@ -93,9 +93,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: poolStartTime + 10
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
@@ -111,9 +111,9 @@ describe("Contract Deployment", async function () {
         rewardToken: ethers.ZeroAddress,
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: poolStartTime + 10
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
@@ -129,9 +129,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: ethers.toBigInt(0),
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: ethers.toBigInt(0)
+        claimLockUpTime: poolStartTime + 10
       }
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       await expect(ercStakingPoolFactory.connect(user_A).requestDeployment(ipfsHash, data)).to.be.revertedWithCustomError(ercStakingPoolFactory, "InvalidTokenAddress");
@@ -147,9 +147,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime,
         poolEndTime: poolEndTime,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 30,
-        claimLockUpTime: poolStartTime + 30,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: poolStartTime + 30
       }
       let length = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -236,9 +236,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime - 10000,
         poolEndTime: poolStartTime + 120,
-        unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond,
+        unstakeLockUpTime: poolStartTime + 10,
+        claimLockUpTime: poolStartTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -258,9 +258,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 10000,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: poolStartTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -281,9 +281,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
-        unstakeLockUpTime: poolEndTime + 130,
-        claimLockUpTime: poolStartTime + 10,
         rewardPerSecond: rewardTokenPerSecond,
+        unstakeLockUpTime: poolEndTime + 130,
+        claimLockUpTime: poolStartTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -302,9 +302,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: rewardTokenPerSecond,
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolEndTime + 10,
-        rewardPerSecond: rewardTokenPerSecond
+        claimLockUpTime: poolEndTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -349,9 +349,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: 0,
         unstakeLockUpTime: poolStartTime + 10,
-        claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: 0
+        claimLockUpTime: poolStartTime + 10
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);
@@ -366,9 +366,9 @@ describe("Contract Deployment", async function () {
         rewardToken: await mockRewardToken.getAddress(),
         poolStartTime: poolStartTime + 100,
         poolEndTime: poolStartTime + 120,
+        rewardPerSecond: 0,
         unstakeLockUpTime: poolStartTime + 10,
         claimLockUpTime: poolStartTime + 10,
-        rewardPerSecond: 0
       };
       let lengthBefore = (await ercStakingPoolFactory.getRequests()).length;
       let values = Object.values(data);

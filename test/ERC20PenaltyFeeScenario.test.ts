@@ -60,8 +60,8 @@ describe("ERC20PenaltyPool Standard Scenario", async function () {
             rewardToken: await mockRewardToken.getAddress(),
             poolStartTime: poolStartTime,
             poolEndTime: poolStartTime + 1000,
-            penaltyPeriod: 200,
             rewardPerSecond: ethers.parseEther("1"),
+            penaltyPeriod: 200
         };
 
         // Create deployment request
