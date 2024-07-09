@@ -11,6 +11,9 @@ import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
 import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
 import {ILockUpPoolStorage} from "../../interfaces/IPools/ILockUpPool.sol";
 
+/// @title ERC721LockUpPool
+/// @notice A smart contract for staking ERC721 tokens and earning rewards over a specified period.
+/// @dev This contract utilizes reentrancy protection, safe token transfers, and ownership management.
 contract ERC721LockUpPool is
     ReentrancyGuard,
     Ownable,
@@ -20,6 +23,7 @@ contract ERC721LockUpPool is
     IPoolErrors
 {
     using SafeERC20 for IERC20;
+
     /// @dev Precision factor for calculations
     uint256 public constant PRECISION_FACTOR = 10e18;
 
@@ -29,13 +33,24 @@ contract ERC721LockUpPool is
         if (block.timestamp > pool.endTime) revert PoolHasEnded();
         _;
     }
-    ///@dev Mapping to store user-specific staking information
+
+    /// @dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
-    ///@dev stakedTokens: Mapping tokenIds to owner addresses
+
+    /// @dev Mapping to store token IDs to owner addresses
     mapping(uint256 => address) ownerById;
 
+    /// @dev Public pool variable to access pool data
     LockUpPool public pool;
 
+    /// @notice Constructor to initialize the staking pool with specified parameters
+    /// @param stakeToken Address of the ERC721 token to be staked
+    /// @param rewardToken Address of the ERC20 token used for rewards
+    /// @param poolStartTime Start time of the staking pool
+    /// @param poolEndTime End time of the staking pool
+    /// @param rewardTokenPerSecond Rate of rewards per second
+    /// @param unstakeLockUpTime LockUp period for unstaking
+    /// @param claimLockUpTime LockUp period for claiming rewards
     constructor(
         address stakeToken,
         address rewardToken,
@@ -63,6 +78,8 @@ contract ERC721LockUpPool is
         pool.lastUpdateTimestamp = pool.startTime;
     }
 
+    /// @notice Handles the receipt of an NFT
+    /// @dev Required by the ERC721 standard
     function onERC721Received(
         address,
         address,
@@ -194,6 +211,9 @@ contract ERC721LockUpPool is
         }
     }
 
+    /// @notice Calculates the pending rewards for a user.
+    /// @param userAddress Address of the user.
+    /// @return The amount of pending rewards.
     function pendingRewards(
         address userAddress
     ) external view returns (uint256) {
@@ -218,6 +238,7 @@ contract ERC721LockUpPool is
             user.rewardDebt;
     }
 
+    /// @notice Updates the pool's reward variables to be up-to-date.
     function _updatePool() internal {
         uint256 lastTimestamp = pool.lastUpdateTimestamp;
         uint256 total = pool.totalStaked;
@@ -239,6 +260,14 @@ contract ERC721LockUpPool is
         }
     }
 
+    /**
+     * @notice Return reward multiplier over the given `_from` to `_to` block.
+     * If the `from` block is higher than the pool's reward-end block,
+     * the function returns 0 and therefore rewards are no longer updated.
+     * @param _from Timestamp to start.
+     * @param _to Timestamp to finish.
+     * @return The reward multiplier for the given period.
+     */
     function _getMultiplier(
         uint256 _from,
         uint256 _to

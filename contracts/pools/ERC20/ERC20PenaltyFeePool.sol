@@ -11,6 +11,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @title ERC20PenaltyFeePool
+/// @notice A smart contract for staking ERC20 tokens with penalty fees for early unstaking.
+/// @dev This contract utilizes reentrancy protection, safe token transfers, and ownership management.
 contract ERC20PenaltyFeePool is
     ReentrancyGuard,
     Ownable,
@@ -19,25 +22,43 @@ contract ERC20PenaltyFeePool is
     IPoolErrors
 {
     using SafeERC20 for IERC20;
+
+    /// @dev Precision factor for calculations
     uint256 public constant PRECISION_FACTOR = 10e18;
+
+    /// @dev Penalty fee in basis points (25%)
     uint256 public constant PENALTY_FEE = 2500;
+
+    /// @dev Collectable fee in basis points (1%)
     uint256 public constant COLLECTABLE_FEE = 100;
 
-    ///@dev Public pool variable to access pool data
+    /// @dev Public pool variable to access pool data
     PenaltyPool public pool;
-    ///@dev Mapping to store user-specific staking information
+
+    /// @dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
 
+    /// @dev Modifier to restrict access to admin functions
     modifier onlyAdmin() {
         if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
     }
+
+    /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
     modifier validPool() {
         if (block.timestamp < pool.startTime) revert PoolNotStarted();
         if (block.timestamp > pool.endTime) revert PoolHasEnded();
         _;
     }
 
+    /// @notice Constructor to initialize the staking pool with specified parameters
+    /// @param stakeToken Address of the ERC20 token to be staked
+    /// @param rewardToken Address of the ERC20 token used for rewards
+    /// @param poolStartTime Start time of the staking pool
+    /// @param poolEndTime End time of the staking pool
+    /// @param rewardTokenPerSecond Rate of rewards per second
+    /// @param penaltyPeriod Penalty period for early unstaking
+    /// @param adminAddress Address of the admin wallet
     constructor(
         address stakeToken,
         address rewardToken,
@@ -54,6 +75,8 @@ contract ERC20PenaltyFeePool is
         if (poolStartTime + penaltyPeriod > poolEndTime)
             revert InvalidPenaltyPeriod();
         if (rewardTokenPerSecond == 0) revert InvalidRewardRate();
+
+        // Initialize pool parameters
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
@@ -159,6 +182,7 @@ contract ERC20PenaltyFeePool is
         }
     }
 
+    /// @notice Allows the admin to claim collected penalty fees.
     function claimFee() external nonReentrant onlyAdmin {
         uint256 penaltyAmount = pool.totalPenalties;
         if (penaltyAmount == 0) revert NothingToClaim();
@@ -190,6 +214,7 @@ contract ERC20PenaltyFeePool is
         return pending - _calculatePenalizedAmount(user.penalized, pending);
     }
 
+    /// @notice Updates the pool's reward variables to be up-to-date.
     function _updatePool() internal {
         uint256 lastTimestamp = pool.lastUpdateTimestamp;
         uint256 total = pool.totalStaked;
@@ -211,6 +236,10 @@ contract ERC20PenaltyFeePool is
         }
     }
 
+    /// @notice Calculates the penalized amount based on the user's penalty status.
+    /// @param penalized Boolean indicating if the user is penalized.
+    /// @param _amountToPenalize Amount to be penalized.
+    /// @return The penalized amount.
     function _calculatePenalizedAmount(
         bool penalized,
         uint256 _amountToPenalize
@@ -226,8 +255,9 @@ contract ERC20PenaltyFeePool is
      * @notice Return reward multiplier over the given `_from` to `_to` block.
      * If the `from` block is higher than the pool's reward-end block,
      * the function returns 0 and therefore rewards are no longer updated.
-     * @param _from timestamp to start
-     * @param _to timestamp to finish
+     * @param _from Timestamp to start.
+     * @param _to Timestamp to finish.
+     * @return The reward multiplier for the given period.
      */
     function _getMultiplier(
         uint256 _from,

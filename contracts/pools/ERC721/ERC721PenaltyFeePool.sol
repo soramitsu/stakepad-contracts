@@ -11,6 +11,9 @@ import {IPoolERC721} from "../../interfaces/IPools/IERC721Pool.sol";
 import {IPoolErrors} from "../../interfaces/IPools/IPoolErrors.sol";
 import {IPenaltyFeePoolStorage} from "../../interfaces/IPools/IPenaltyFeePool.sol";
 
+/// @title ERC721PenaltyFeePool
+/// @notice A smart contract for staking ERC721 tokens with penalty fees for early unstaking.
+/// @dev This contract utilizes reentrancy protection, safe token transfers, and ownership management.
 contract ERC721PenaltyFeePool is
     ReentrancyGuard,
     Ownable,
@@ -20,11 +23,17 @@ contract ERC721PenaltyFeePool is
     IPoolErrors
 {
     using SafeERC20 for IERC20;
+
     /// @dev Precision factor for calculations
     uint256 public constant PRECISION_FACTOR = 10e18;
+
+    /// @dev Penalty fee in basis points (25%)
     uint256 public constant PENALTY_FEE = 2500;
+
+    /// @dev Collectable fee in basis points (1%)
     uint256 public constant COLLECTABLE_FEE = 100;
 
+    /// @dev Modifier to restrict access to admin functions
     modifier onlyAdmin() {
         if (msg.sender != pool.adminWallet) revert NotAdmin();
         _;
@@ -36,13 +45,24 @@ contract ERC721PenaltyFeePool is
         if (block.timestamp > pool.endTime) revert PoolHasEnded();
         _;
     }
-    ///@dev Mapping to store user-specific staking information
+
+    /// @dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
-    ///@dev stakedTokens: Mapping tokenIds to owner addresses
+
+    /// @dev Mapping to store token IDs to owner addresses
     mapping(uint256 => address) ownerById;
 
+    /// @dev Public pool variable to access pool data
     PenaltyPool public pool;
 
+    /// @notice Constructor to initialize the staking pool with specified parameters
+    /// @param stakeToken Address of the ERC721 token to be staked
+    /// @param rewardToken Address of the ERC20 token used for rewards
+    /// @param poolStartTime Start time of the staking pool
+    /// @param poolEndTime End time of the staking pool
+    /// @param rewardTokenPerSecond Rate of rewards per second
+    /// @param penaltyPeriod Penalty period for early unstaking
+    /// @param adminAddress Address of the admin wallet
     constructor(
         address stakeToken,
         address rewardToken,
@@ -60,6 +80,7 @@ contract ERC721PenaltyFeePool is
         if (poolStartTime + penaltyPeriod > poolEndTime)
             revert InvalidPenaltyPeriod();
 
+        // Initialize pool parameters
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
@@ -70,6 +91,8 @@ contract ERC721PenaltyFeePool is
         pool.adminWallet = adminAddress;
     }
 
+    /// @notice Handles the receipt of an NFT
+    /// @dev Required by the ERC721 standard
     function onERC721Received(
         address,
         address,
@@ -204,6 +227,7 @@ contract ERC721PenaltyFeePool is
         }
     }
 
+    /// @notice Allows the admin to claim collected penalty fees.
     function claimFee() external nonReentrant onlyAdmin {
         uint256 penaltyAmount = pool.totalPenalties;
         if (penaltyAmount == 0) revert NothingToClaim();
@@ -212,6 +236,9 @@ contract ERC721PenaltyFeePool is
         emit FeeClaim(penaltyAmount);
     }
 
+    /// @notice Calculates the pending rewards for a user.
+    /// @param userAddress Address of the user.
+    /// @return The amount of pending rewards.
     function pendingRewards(
         address userAddress
     ) external view returns (uint256) {
@@ -234,7 +261,10 @@ contract ERC721PenaltyFeePool is
         pending += ((user.amount * share) / PRECISION_FACTOR) - user.rewardDebt;
         return pending - _calculatePenalizedAmount(user.penalized, pending);
     }
-
+    /// @notice Calculates the penalized amount based on the user's penalty status.
+    /// @param penalized Boolean indicating if the user is penalized.
+    /// @param _amountToPenalize Amount to be penalized.
+    /// @return The penalized amount.
     function _calculatePenalizedAmount(
         bool penalized,
         uint256 _amountToPenalize
@@ -246,6 +276,7 @@ contract ERC721PenaltyFeePool is
         return (_amountToPenalize * COLLECTABLE_FEE) / 10000;
     }
 
+    /// @notice Updates the pool's reward variables to be up-to-date.
     function _updatePool() internal {
         uint256 lastTimestamp = pool.lastUpdateTimestamp;
         uint256 total = pool.totalStaked;
@@ -266,7 +297,14 @@ contract ERC721PenaltyFeePool is
             emit UpdatePool(total, pool.accRewardPerShare, block.timestamp);
         }
     }
-
+    /**
+     * @notice Return reward multiplier over the given `_from` to `_to` block.
+     * If the `from` block is higher than the pool's reward-end block,
+     * the function returns 0 and therefore rewards are no longer updated.
+     * @param _from Timestamp to start.
+     * @param _to Timestamp to finish.
+     * @return The reward multiplier for the given period.
+     */
     function _getMultiplier(
         uint256 _from,
         uint256 _to

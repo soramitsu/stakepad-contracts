@@ -12,6 +12,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title ERC20LockUpPool
 /// @notice A smart contract for staking ERC20 tokens and earning rewards over a specified period.
+/// @dev This contract utilizes reentrancy protection, safe token transfers, and ownership management.
 contract ERC20LockUpPool is
     ReentrancyGuard,
     Ownable,
@@ -24,9 +25,9 @@ contract ERC20LockUpPool is
     /// @dev Precision factor for calculations
     uint256 public constant PRECISION_FACTOR = 10e18;
 
-    ///@dev Public pool variable to access pool data
+    /// @dev Public pool variable to access pool data
     LockUpPool public pool;
-    ///@dev Mapping to store user-specific staking information
+    /// @dev Mapping to store user-specific staking information
     mapping(address => UserInfo) public userInfo;
 
     /// @dev Modifier to ensure that functions can only be executed when the pool is active and within the specified time range
@@ -211,7 +212,7 @@ contract ERC20LockUpPool is
     /**
      * @notice Update reward variables of the given pool to be up-to-date.
      * @dev If the current block number is higher than the reward-end block,
-     * the pool rewadrs are no longer updated (stopped).
+     * the pool rewards are no longer updated (stopped).
      */
     function _updatePool() internal {
         uint256 lastTimestamp = pool.lastUpdateTimestamp;
