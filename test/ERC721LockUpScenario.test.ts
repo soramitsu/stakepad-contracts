@@ -6,12 +6,14 @@ import {
     ERC20MockToken,
     ERC721MockToken,
     ERC721LockUpStakingFactory,
+    RequestManager
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("erc721LockUpPool Standard Scenario", async function () {
     let mockStakeToken: ERC721MockToken;
     let mockRewardToken: ERC20MockToken;
+    let requestManager: RequestManager;
     let erc721LockUpFactory: ERC721LockUpStakingFactory;
     let erc721LockUpPool: ERC721LockUpPool;
     let admin: HardhatEthersSigner;
@@ -19,13 +21,18 @@ describe("erc721LockUpPool Standard Scenario", async function () {
     let user_A: HardhatEthersSigner;
     let user_B: HardhatEthersSigner;
     let user_C: HardhatEthersSigner;
-
     let poolStartTime: number;
+
+    let coder = ethers.AbiCoder.defaultAbiCoder();
 
     before(async function () {
         // Get signers
         [admin, deployer, user_A, user_B, user_C] =
             await ethers.getSigners();
+
+        let RequestManagerFactory = await ethers.getContractFactory(
+            "RequestManager"
+        );
 
         let ERC721LockUpStakingFactory = await ethers.getContractFactory(
             "ERC721LockUpStakingFactory"
@@ -39,7 +46,10 @@ describe("erc721LockUpPool Standard Scenario", async function () {
 
         mockStakeToken = await ERC721MockTokenFactory.deploy("StakeToken", "STK");
         mockRewardToken = await ERC20MockTokenFactory.deploy("RewardToken", "RTK", 18);
-        erc721LockUpFactory = await ERC721LockUpStakingFactory.deploy();
+        requestManager = await RequestManagerFactory.deploy();
+        erc721LockUpFactory = await ERC721LockUpStakingFactory.deploy(await requestManager.getAddress());
+        await requestManager.addFactory(await erc721LockUpFactory.getAddress());
+
 
         //First mint reward tokens for user before activating pool
         await mockRewardToken.mint(
@@ -65,13 +75,21 @@ describe("erc721LockUpPool Standard Scenario", async function () {
             claimLockUpTime: 0
         };
 
+        let encoded = coder.encode(["tuple(address stakeToken, address rewardToken, uint poolStartTime, uint poolEndTime, uint rewardPerSecond, uint unstakeLockUpTime, uint claimLockUpTime)"], [data]);
+        let requestPayload = {
+            ipfsHash: ipfsHash,
+            deployer: deployer.address,
+            factory: await erc721LockUpFactory.getAddress(),
+            stakingData: encoded
+        }
+
         // Create deployment request
-        await erc721LockUpFactory.connect(deployer).requestDeployment(ipfsHash, data);
+        await requestManager.connect(deployer).requestDeployment(requestPayload);
         // Approve and deploy the request
-        await erc721LockUpFactory.approveRequest(0);
+        await requestManager.approveRequest(0);
         // Deploy approved request
         await mockRewardToken.connect(deployer).approve(erc721LockUpFactory.getAddress(), ethers.parseEther("1000"));
-        await erc721LockUpFactory.connect(deployer).deploy(0);
+        await requestManager.connect(deployer).deploy(0);
 
         const users = [user_A, user_B, user_C];
         let poolAddress = await erc721LockUpFactory.stakingPools(0);
