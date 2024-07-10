@@ -6,7 +6,7 @@ interface ILockUpPoolStorage {
      * @notice Storage for a user's staking information
      * @dev amount Number of tokens staked by the user.
      * @dev claimed The amount of rewards already claimed by the user
-     * @dev rewardDebt Used to calculate rewards efficiently
+     * @dev rewardDebt Used for rewards calculation
      * @dev pending The amount of rewards pending for the user
      */
     struct UserInfo {
@@ -22,8 +22,8 @@ interface ILockUpPoolStorage {
      * @dev rewardToken The address of the reward token
      * @dev startTime The start time of the pool
      * @dev endTime The end time of the pool
-     * @dev unstakeLockUpTime The LockUp time (in unixtimestamp) before unstaking
-     * @dev claimLockUpTime The LockUp time (in unixtimestamp) before claiming rewards
+     * @dev unstakeLockUpTime The lockup time (in unixtimestamp) before unstaking
+     * @dev claimLockUpTime The lockup time (in unixtimestamp) before claiming rewards
      * @dev rewardTokenPerSecond The reward distribution rate per second
      * @dev totalStaked: Total tokens staked
      * @dev totalClaimed: Total rewards claimed
@@ -35,8 +35,8 @@ interface ILockUpPoolStorage {
         address rewardToken;
         uint256 startTime;
         uint256 endTime;
-        uint256 unstakeLockUpTime; // LockUp period for unstaking
-        uint256 claimLockUpTime; // LockUp period for claiming rewards
+        uint256 unstakeLockUpTime; 
+        uint256 claimLockUpTime;
         uint256 rewardTokenPerSecond;
         uint256 totalStaked;
         uint256 totalClaimed;

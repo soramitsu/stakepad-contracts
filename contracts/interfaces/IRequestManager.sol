@@ -25,12 +25,12 @@ interface IRequestManager {
 
     error InvalidId();
     error InvalidRequestStatus();
-    error InvalidCaller();
-    error InvalidIpfsHash();
+    error InvalidDeployer();
+    error IpfsZeroHash();
     error InvalidAddress();
-    error InvalidPayload();
+    error EmptyPayload();
     error UnregisteredFactory();
-    error FactoryAlreadyRegistered();
+    error AlreadyRegisteredFactory();
 
     event RequestStatusChanged(uint256 indexed id, Status indexed status);
     event RequestFullfilled(uint256 indexed id, address indexed poolAddress);

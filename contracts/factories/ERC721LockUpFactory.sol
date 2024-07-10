@@ -6,28 +6,27 @@ SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 import {ERC721LockUpPool} from "../pools/ERC721/ERC721LockUpStakingPool.sol";
 import {ILockUpFactory} from "../interfaces/IFactories/ILockUpFactory.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {GenericFactory} from "./GenericFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title ERC721LockUpStakingFactory
 /// @notice A smart contract for deploying ERC721 LockUp staking pools.
 /// @author Ayooluwa Akindeko, Soramitsu team
-contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
+contract ERC721LockUpStakingFactory is GenericFactory, ILockUpFactory {
     using SafeERC20 for IERC20;
 
-    address public requestManager;
-    address[] public stakingPools;
+    constructor(address managerContract) GenericFactory(managerContract) {}
 
-    constructor(address managerContract) Ownable(msg.sender) {
-        if (managerContract == address(0)) revert InvalidManagerAddress();
-        requestManager = managerContract;
-    }
-
-    /// @notice Function allows users to deploy the LockUp staking pool with specified parameters
-    function deploy(address deployer, bytes calldata payload) public returns (address newPoolAddress) {
-        if (payload.length != 224) revert InvalidPayloadLength();
+    /// @notice Function allows users to deploy the ERC721 LockUp staking pool with specified parameters
+    /// @param deployer Address of the deployer
+    /// @param payload Encoded staking pool deployment parameters 
+    function deploy(
+        address deployer,
+        bytes calldata payload
+    ) public returns (address newPoolAddress) {
         if (msg.sender != requestManager) revert InvalidCaller();
+        if (payload.length != 224) revert InvalidPayloadLength();
         DeploymentData memory data = abi.decode(payload, (DeploymentData));
         newPoolAddress = address(
             new ERC721LockUpPool{
@@ -62,9 +61,5 @@ contract ERC721LockUpStakingFactory is Ownable, ILockUpFactory {
             rewardAmount
         );
         emit StakingPoolDeployed(newPoolAddress);
-    }
-
-    function getPools() external view returns (address[] memory pools) {
-        pools = stakingPools;
     }
 }

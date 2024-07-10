@@ -37,7 +37,9 @@ interface IPoolERC721 {
         uint256 lastBlockNumber
     );
 
-    // **External Functions**
+    /**
+     *  FUNCTIONS
+     */
 
     /**
      * @notice Allows users to stake ERC721 tokens into the pool.
