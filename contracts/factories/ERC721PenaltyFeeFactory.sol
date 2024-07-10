@@ -107,7 +107,7 @@ contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         PenaltyFeeRequest storage req = requests[id];
         if (msg.sender != req.info.deployer) revert InvalidCaller();
         if (
-            req.info.requestStatus != Status.CREATED ||
+            req.info.requestStatus != Status.CREATED &&
             req.info.requestStatus != Status.APPROVED
         ) revert InvalidRequestStatus();
         req.info.requestStatus = Status.CANCELED;
