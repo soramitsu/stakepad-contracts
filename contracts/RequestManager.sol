@@ -40,12 +40,12 @@ contract RequestManager is Ownable, IRequestManager {
         Request memory req = requests[id];
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
         if (msg.sender != req.data.deployer) revert InvalidCaller();
+        requests[id].requestStatus = Status.DEPLOYED;
         newPoolAddress = IBaseFactory(req.data.factory).deploy(
             req.data.deployer,
             req.data.stakingData
         );
         stakingPools.push(newPoolAddress);
-        requests[id].requestStatus = Status.DEPLOYED;
         poolById[id] = newPoolAddress;
         emit RequestFullfilled(id, newPoolAddress);
     }
