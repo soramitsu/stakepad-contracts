@@ -11,16 +11,4 @@ interface IPenaltyFeeFactory is IBaseFactory {
         uint256 rewardPerSecond;
         uint256 penaltyPeriod;
     }
-
-    struct PenaltyFeeRequest {
-        RequestInfo info;
-        DeploymentData data;
-    }
-
-    event RequestSubmitted(
-        uint256 indexed id,
-        address indexed deployer,
-        Status indexed status,
-        DeploymentData data
-    );
 }

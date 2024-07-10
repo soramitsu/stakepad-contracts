@@ -5,12 +5,14 @@ import {
     ERC20PenaltyFeePool,
     ERC20MockToken,
     ERC20PenaltyFeeStakingFactory,
+    RequestManager
 } from "../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("ERC20PenaltyPool Standard Scenario", async function () {
     let mockStakeToken: ERC20MockToken;
     let mockRewardToken: ERC20MockToken;
+    let requestManager: RequestManager;
     let erc20PenaltyFeeFactory: ERC20PenaltyFeeStakingFactory;
     let erc20PenaltyPool: ERC20PenaltyFeePool;
     let admin: HardhatEthersSigner;
@@ -18,13 +20,18 @@ describe("ERC20PenaltyPool Standard Scenario", async function () {
     let user_A: HardhatEthersSigner;
     let user_B: HardhatEthersSigner;
     let user_C: HardhatEthersSigner;
-
     let poolStartTime: number;
+
+    let coder = ethers.AbiCoder.defaultAbiCoder();
 
     before(async function () {
         // Get signers
         [admin, deployer, user_A, user_B, user_C] =
             await ethers.getSigners();
+
+        let RequestManagerFactory = await ethers.getContractFactory(
+            "RequestManager"
+        );
 
         let ERC20PenaltyFeeStakingFactory = await ethers.getContractFactory(
             "ERC20PenaltyFeeStakingFactory"
@@ -35,7 +42,9 @@ describe("ERC20PenaltyPool Standard Scenario", async function () {
 
         mockStakeToken = await ERC20MockTokenFactory.deploy("StakeToken", "STK", 18);
         mockRewardToken = await ERC20MockTokenFactory.deploy("RewardToken", "RTK", 18);
-        erc20PenaltyFeeFactory = await ERC20PenaltyFeeStakingFactory.deploy();
+        requestManager = await RequestManagerFactory.deploy();
+        erc20PenaltyFeeFactory = await ERC20PenaltyFeeStakingFactory.deploy(await requestManager.getAddress());
+        await requestManager.addFactory(await erc20PenaltyFeeFactory.getAddress());
 
         //First mint reward tokens for user before activating pool
         await mockStakeToken.mint(
@@ -64,13 +73,20 @@ describe("ERC20PenaltyPool Standard Scenario", async function () {
             penaltyPeriod: 200
         };
 
+        let encoded = coder.encode(["tuple(address stakeToken, address rewardToken, uint poolStartTime, uint poolEndTime, uint rewardPerSecond, uint penaltyPeriod)"], [data]);
+        let requestPayload = {
+            ipfsHash: ipfsHash,
+            deployer: deployer.address,
+            factory: await erc20PenaltyFeeFactory.getAddress(),
+            stakingData: encoded
+        }
         // Create deployment request
-        await erc20PenaltyFeeFactory.connect(deployer).requestDeployment(ipfsHash, data);
+        await requestManager.connect(deployer).requestDeployment(requestPayload);
         // Approve and deploy the request
-        await erc20PenaltyFeeFactory.approveRequest(0);
+        await requestManager.approveRequest(0);
         // Deploy approved request
-        await mockRewardToken.connect(deployer).approve(erc20PenaltyFeeFactory.getAddress(), ethers.parseEther("1000"));
-        await erc20PenaltyFeeFactory.connect(deployer).deploy(0);
+        await mockRewardToken.connect(deployer).approve(await erc20PenaltyFeeFactory.getAddress(), ethers.parseEther("1000"));
+        await requestManager.connect(deployer).deploy(0);
 
         const users = [user_A, user_B, user_C];
         let poolAddress = await erc20PenaltyFeeFactory.stakingPools(0);

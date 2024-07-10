@@ -12,16 +12,4 @@ interface ILockUpFactory is IBaseFactory {
         uint256 unstakeLockUpTime; // LockUp period for unstaking
         uint256 claimLockUpTime; // LockUp period for claiming rewards
     }
-
-    struct LockUpRequest {
-        RequestInfo info;
-        DeploymentData data;
-    }
-
-    event RequestSubmitted(
-        uint256 indexed id,
-        address indexed deployer,
-        Status indexed status,
-        DeploymentData data
-    );
 }

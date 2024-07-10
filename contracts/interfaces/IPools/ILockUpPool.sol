@@ -43,8 +43,4 @@ interface ILockUpPoolStorage {
         uint256 lastUpdateTimestamp;
         uint256 accRewardPerShare;
     }
-
-    /**
-     *  ERROR MESSAGES
-     */
 }
