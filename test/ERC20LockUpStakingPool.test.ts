@@ -153,7 +153,7 @@ describe("Contract Deployment", async function () {
       }
 
       let lengthBefore = (await requestManager.getRequests()).length;
-      await expect(requestManager.connect(user_A).requestDeployment(requestPayload)).to.be.revertedWithCustomError(requestManager, "InvalidIpfsHash");
+      await expect(requestManager.connect(user_A).requestDeployment(requestPayload)).to.be.revertedWithCustomError(requestManager, "IpfsZeroHash");
       let length = (await requestManager.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -167,7 +167,7 @@ describe("Contract Deployment", async function () {
       }
 
       let lengthBefore = (await requestManager.getRequests()).length;
-      await expect(requestManager.connect(user_A).requestDeployment(requestPayload)).to.be.revertedWithCustomError(requestManager, "InvalidPayload");
+      await expect(requestManager.connect(user_A).requestDeployment(requestPayload)).to.be.revertedWithCustomError(requestManager, "EmptyPayload");
       let length = (await requestManager.getRequests()).length;
       expect(lengthBefore).to.be.equal(length);
     });
@@ -258,11 +258,11 @@ describe("Contract Deployment", async function () {
       expect(req.requestStatus).to.be.equal(3);
     });
 
-    it("Deploy failed: invalid caller", async function () {
+    it("Deploy failed: invalid deployer", async function () {
       let length = (await requestManager.getRequests()).length;
       let req = await requestManager.requests(length - 1);
       expect(req.requestStatus).to.be.equal(3);
-      await expect(requestManager.connect(user_B).deploy(length - 1)).to.be.revertedWithCustomError(requestManager, "InvalidCaller");
+      await expect(requestManager.connect(user_B).deploy(length - 1)).to.be.revertedWithCustomError(requestManager, "InvalidDeployer");
     });
 
     it("Deploy failed: invalid id", async function () {
