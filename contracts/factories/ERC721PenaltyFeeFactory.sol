@@ -6,26 +6,23 @@ SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 import {ERC721PenaltyFeePool} from "../pools/ERC721/ERC721PenaltyFeePool.sol";
 import {IPenaltyFeeFactory} from "../interfaces/IFactories/IPenaltyFeeFactory.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {GenericFactory} from "./GenericFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title ERC721PenaltyFeeStakingFactory
 /// @notice A smart contract for deploying ERC721 staking pools with penalty fees.
-contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
+contract ERC721PenaltyFeeStakingFactory is GenericFactory, IPenaltyFeeFactory {
     using SafeERC20 for IERC20;
-    address public requestManager;
-    address[] public stakingPools;
 
-    constructor(address managerContract) Ownable(msg.sender) {
-        if (managerContract == address(0)) revert InvalidManagerAddress();
-        requestManager = managerContract;
-    }
+    constructor(address managerContract) GenericFactory(managerContract) {}
 
-    /// @notice Function allows users to deploy the penaltyFee staking pool with specified parameters
+    /// @notice Function allows users to deploy the ERC721 penaltyFee staking pool with specified parameters
+    /// @param deployer Address of the deployer
+    /// @param payload Encoded staking pool deployment parameters 
      function deploy(address deployer, bytes calldata payload) public returns (address newPoolAddress) {
-        if (payload.length != 192) revert InvalidPayloadLength();
         if (msg.sender != requestManager) revert InvalidCaller();
+        if (payload.length != 192) revert InvalidPayloadLength();
         DeploymentData memory data = abi.decode(payload, (DeploymentData));
         newPoolAddress = address(
             new ERC721PenaltyFeePool{
@@ -61,9 +58,5 @@ contract ERC721PenaltyFeeStakingFactory is Ownable, IPenaltyFeeFactory {
         );
         
         emit StakingPoolDeployed(newPoolAddress);
-    }
-    
-    function getPools() external view returns (address[] memory pools) {
-        pools = stakingPools;
     }
 }

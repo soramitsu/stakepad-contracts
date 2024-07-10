@@ -30,7 +30,7 @@ interface IRequestManager {
     error InvalidAddress();
     error InvalidPayload();
     error UnregisteredFactory();
-    error FactoryAlreadyRegistered();
+    error AlreadyRegisteredFactory();
 
     event RequestStatusChanged(uint256 indexed id, Status indexed status);
     event RequestFullfilled(uint256 indexed id, address indexed poolAddress);

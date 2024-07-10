@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
-import {IBaseFactory} from "./IBaseFactory.sol";
 
-interface ILockUpFactory is IBaseFactory {
+interface ILockUpFactory {
     struct DeploymentData {
         address stakeToken;
         address rewardToken;

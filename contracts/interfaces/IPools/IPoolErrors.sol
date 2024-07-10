@@ -40,7 +40,7 @@ interface IPoolErrors {
     error InvalidLockUpTime();
 
     /**
-     * @notice Error emitted when a user other than the owner of a token attempts to unstake it.
+     * @dev Error emitted when a user other than the owner of a token attempts to unstake it.
      */
     error NotStaker();
 

@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 interface IPenaltyFeePoolStorage {
     /**
      * @notice Storage for a user's staking information
      * @dev amount Number of tokens staked by the user.
      * @dev claimed The amount of rewards already claimed by the user
-     * @dev rewardDebt Used to calculate rewards efficiently
+     * @dev rewardDebt Used for rewards calculation
      * @dev pending The amount of rewards pending for the user
      */
     struct UserInfo {
@@ -54,8 +51,8 @@ interface IPenaltyFeePoolStorage {
 
     /**
      * @notice Event to notify when an admin claims accumulated fees
-     * @dev Emitted in 'claim' function
-     * @param amount The amount of fees claimed
+     * @dev Emitted in 'FeeClaim' function
+     * @param amount The amount of fees to be claimed
      */
     event FeeClaim(uint256 amount);
 }
