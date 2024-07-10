@@ -6,7 +6,7 @@ interface ILockUpPoolStorage {
      * @notice Storage for a user's staking information
      * @dev amount Number of tokens staked by the user.
      * @dev claimed The amount of rewards already claimed by the user
-     * @dev rewardDebt Used to calculate rewards efficiently
+     * @dev rewardDebt Used for rewards calculation
      * @dev pending The amount of rewards pending for the user
      */
     struct UserInfo {

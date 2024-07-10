@@ -23,7 +23,7 @@ contract RequestManager is Ownable, IRequestManager {
     constructor() Ownable(msg.sender) {}
 
     function addFactory(address factory) external onlyOwner {
-        if (factory == address(0)) revert InvalidAddress();
+        if (factory == address(0) || factory == address(this)) revert InvalidAddress();
         if (whitelistFactory[factory]) revert AlreadyRegisteredFactory();
         whitelistFactory[factory] = true;
         emit FactoryRegistered(factory);
@@ -41,7 +41,7 @@ contract RequestManager is Ownable, IRequestManager {
         if (requests.length <= id) revert InvalidId();
         Request memory req = requests[id];
         if (req.requestStatus != Status.APPROVED) revert InvalidRequestStatus();
-        if (msg.sender != req.data.deployer) revert InvalidCaller();
+        if (msg.sender != req.data.deployer) revert InvalidDeployer();
         requests[id].requestStatus = Status.DEPLOYED;
         address newPoolAddress = IGenericFactory(req.data.factory).deploy(
             req.data.deployer,
@@ -57,8 +57,8 @@ contract RequestManager is Ownable, IRequestManager {
     function requestDeployment(RequestPayload calldata data) external {
         if (data.deployer == address(0) || data.factory == address(0))
             revert InvalidAddress();
-        if (data.ipfsHash == bytes32(0)) revert InvalidIpfsHash();
-        if (data.stakingData.length == 0) revert InvalidPayload();
+        if (data.ipfsHash == bytes32(0)) revert IpfsZeroHash();
+        if (data.stakingData.length == 0) revert EmptyPayload();
         if (!whitelistFactory[data.factory]) revert UnregisteredFactory();
         requests.push(Request({requestStatus: Status.CREATED, data: data}));
         emit RequestSubmitted(requests.length - 1, data);
@@ -89,7 +89,7 @@ contract RequestManager is Ownable, IRequestManager {
     function cancelRequest(uint256 id) external {
         if (requests.length <= id) revert InvalidId();
         Request storage req = requests[id];
-        if (msg.sender != req.data.deployer) revert InvalidCaller();
+        if (msg.sender != req.data.deployer) revert InvalidDeployer();
         if (
             req.requestStatus != Status.CREATED &&
             req.requestStatus != Status.APPROVED

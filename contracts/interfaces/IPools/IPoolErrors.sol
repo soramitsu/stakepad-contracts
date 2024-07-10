@@ -5,6 +5,10 @@ interface IPoolErrors {
     /**
      *  ERROR MESSAGES
      */
+
+    /// @dev Error to indicate an invalid token address
+    error InvalidTokenAddress();
+
     /// @dev Error to indicate an invalid staking period
     error InvalidStakingPeriod();
 
@@ -39,13 +43,12 @@ interface IPoolErrors {
     /// @dev Error to indicate an invalid LockUp time for unstaking or claiming rewards
     error InvalidLockUpTime();
 
-    /**
-     * @dev Error emitted when a user other than the owner of a token attempts to unstake it.
-     */
+    /// @dev Error emitted when a user other than the owner of a token attempts to unstake it.
     error NotStaker();
 
     /// @dev Error to indicate an invalid penalty duration for unstaking
     error InvalidPenaltyPeriod();
+
     /// @dev Error to indicate that the caller is not the admin
     error NotAdmin();
 }

@@ -25,10 +25,10 @@ interface IRequestManager {
 
     error InvalidId();
     error InvalidRequestStatus();
-    error InvalidCaller();
-    error InvalidIpfsHash();
+    error InvalidDeployer();
+    error IpfsZeroHash();
     error InvalidAddress();
-    error InvalidPayload();
+    error EmptyPayload();
     error UnregisteredFactory();
     error AlreadyRegisteredFactory();
 
