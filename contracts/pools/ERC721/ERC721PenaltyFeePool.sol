@@ -63,6 +63,7 @@ contract ERC721PenaltyFeePool is
         if (poolStartTime + penaltyPeriod > poolEndTime)
             revert InvalidPenaltyPeriod();
 
+        // Initialize pool parameters
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
@@ -83,7 +84,7 @@ contract ERC721PenaltyFeePool is
     }
 
     /**
-     * @dev See {IERC721BasePool-stake}.
+     * @dev See {IERC721Pool-stake}.
      */
     function stake(
         uint256[] calldata tokenIds
@@ -130,7 +131,7 @@ contract ERC721PenaltyFeePool is
     }
 
     /**
-     * @dev See {IERC721BasePool-unstake}.
+     * @dev See {IERC721Pool-unstake}.
      */
     function unstake(uint256[] calldata tokenIds) external nonReentrant {
         uint256 length = tokenIds.length;
@@ -170,7 +171,7 @@ contract ERC721PenaltyFeePool is
     }
 
     /**
-     * @dev See {IERC721BasePool-claim}.
+     * @dev See {IERC721Pool-claim}.
      */
     function claim() external nonReentrant {
         // Get user information

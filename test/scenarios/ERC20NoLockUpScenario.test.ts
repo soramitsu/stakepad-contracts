@@ -6,10 +6,10 @@ import {
   ERC20MockToken,
   ERC20LockUpStakingFactory,
   RequestManager
-} from "../typechain";
+} from "../../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("ERC20LockupPool Standard Scenario", async function () {
+describe("ERC20NoLockupPool Reward Calculation Scenario", async function () {
   let mockStakeToken: ERC20MockToken;
   let mockRewardToken: ERC20MockToken;
   let requestManager: RequestManager;

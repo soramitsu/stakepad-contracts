@@ -42,16 +42,16 @@ contract ERC20LockUpPool is
     /// @param poolStartTime Start time of the staking pool
     /// @param poolEndTime End time of the staking pool
     /// @param rewardTokenPerSecond Rate of rewards per second
-    /// @param unstakeLockUp LockUp period for unstaking
-    /// @param claimLockUp LockUp period for claiming rewards
+    /// @param unstakeLockUpTime LockUp time in unixtimestamp for unstaking
+    /// @param claimLockUpTime LockUp time in unixtimestamp for claiming rewards
     constructor(
         address stakeToken,
         address rewardToken,
         uint256 poolStartTime,
         uint256 poolEndTime,
         uint256 rewardTokenPerSecond,
-        uint256 unstakeLockUp,
-        uint256 claimLockUp
+        uint256 unstakeLockUpTime,
+        uint256 claimLockUpTime
     ) Ownable(msg.sender) {
         // Ensure that stakeToken and rewardToken addresses are valid
         if (stakeToken == address(0) || rewardToken == address(0)) revert InvalidTokenAddress();
@@ -60,8 +60,9 @@ contract ERC20LockUpPool is
         // Ensure the staking period is valid
         if (poolStartTime >= poolEndTime) revert InvalidStakingPeriod();
         // Ensure the LockUp periods are valid
-        if (unstakeLockUp > poolEndTime || claimLockUp > poolEndTime)
+        if (unstakeLockUpTime > poolEndTime || claimLockUpTime > poolEndTime)
             revert InvalidLockUpTime();
+        // Ensure the reward rate is not zero
         if (rewardTokenPerSecond == 0) revert InvalidRewardRate();
 
         // Initialize pool parameters
@@ -69,8 +70,8 @@ contract ERC20LockUpPool is
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
         pool.endTime = poolEndTime;
-        pool.unstakeLockUpTime = unstakeLockUp;
-        pool.claimLockUpTime = claimLockUp;
+        pool.unstakeLockUpTime = unstakeLockUpTime;
+        pool.claimLockUpTime = claimLockUpTime;
         pool.rewardTokenPerSecond = rewardTokenPerSecond;
         pool.lastUpdateTimestamp = poolStartTime;
     }
@@ -170,13 +171,15 @@ contract ERC20LockUpPool is
                 PRECISION_FACTOR;
         }
         if (pending > 0) {
-            // Transfer pending rewards to the user
             user.pending = 0;
             unchecked {
                 user.claimed += pending;
             }
+            // Update total claimed amount
             pool.totalClaimed += pending;
+            // Transfer pending rewards from the contract to the user
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
+            // Emit claim event
             emit Claim(msg.sender, pending, 0);
         } else {
             revert NothingToClaim();
