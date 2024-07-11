@@ -53,7 +53,8 @@ contract ERC721PenaltyFeePool is
         address adminAddress
     ) Ownable(msg.sender) {
         // Ensure that stakeToken and rewardToken addresses are valid
-        if (stakeToken == address(0) || rewardToken == address(0)) revert InvalidTokenAddress();
+        if (stakeToken == address(0) || rewardToken == address(0))
+            revert InvalidTokenAddress();
         // Ensure the staking period is valid
         if (poolStartTime > poolEndTime) revert InvalidStakingPeriod();
         // Ensure the start time is in the future
@@ -105,6 +106,10 @@ contract ERC721PenaltyFeePool is
         unchecked {
             user.amount += amount;
         }
+        user.penaltyEndTime = block.timestamp + pool.penaltyPeriod >
+            pool.endTime
+            ? pool.endTime
+            : block.timestamp + pool.penaltyPeriod;
         user.rewardDebt = (user.amount * share) / PRECISION_FACTOR;
         pool.totalStaked += amount;
 
@@ -132,10 +137,11 @@ contract ERC721PenaltyFeePool is
         if (length == 0) revert InvalidAmount();
         UserInfo storage user = userInfo[msg.sender];
         uint256 currentAmount = user.amount;
-        if (length > currentAmount)
+        if (currentAmount < length)
             revert InsufficientAmount(length, currentAmount);
         _updatePool();
         uint256 share = pool.accRewardPerShare;
+        if (block.timestamp <= user.penaltyEndTime) user.penalized = true;
         user.pending +=
             ((currentAmount * share) / PRECISION_FACTOR) -
             user.rewardDebt;

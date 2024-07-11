@@ -122,7 +122,7 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         await time.increaseTo(await time.latest() + 149);
         await erc721PenaltyPool.connect(user_B).unstake([10]);
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("103.242857142857142857"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("84.857142857142857144"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("64.285714285714285715"));
         expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0"));
         expect((await erc721PenaltyPool.pool()).totalStaked).to.be.equal(13);
         console.log("3rd block timestamp:", (await time.latest() - poolStartTime));
@@ -132,7 +132,7 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         await erc721PenaltyPool.connect(user_A).claim();
         expect(await mockRewardToken.balanceOf(user_A.getAddress())).to.be.equal(ethers.parseEther("126.089010989010989011"));
         expect(((await erc721PenaltyPool.userInfo(user_A.getAddress())).claimed)).to.be.equal(ethers.parseEther("126.089010989010989011"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("111.51098901098901099"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("84.478021978021978023"));
         expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0"));
         console.log("4th block timestamp:", (await time.latest() - poolStartTime));
 
@@ -140,14 +140,14 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         await time.increaseTo(await time.latest() + 49);
         await erc721PenaltyPool.connect(user_C).stake([20, 21, 22, 23, 24]);
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("22.846153846153846154"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("138.164835164835164836"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("104.670329670329670330"));
         expect((await erc721PenaltyPool.pool()).totalStaked).to.be.equal(18);
         console.log("5th block timestamp:", (await time.latest() - poolStartTime));
 
         // Time = 301 seconds after pool was started
         await erc721PenaltyPool.connect(user_C).stake([25, 26, 27, 28, 29]);
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("23.176153846153846154"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("138.549835164835164836"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("104.961996336996336997"));
         expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0.275000000000000001"));
         expect((await erc721PenaltyPool.pool()).totalStaked).to.be.equal(23);
         console.log("6th block timestamp:", (await time.latest() - poolStartTime));
@@ -156,8 +156,8 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         await time.increaseTo(await time.latest() + 198);
         await erc721PenaltyPool.connect(user_C).unstake([20, 21, 22, 23]);
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("74.570066889632107023"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("198.509400382226469184"));
-        expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("85.931521739130434783"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("150.385909380474597867"));
+        expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("65.099637681159420290"));
         expect((await erc721PenaltyPool.pool()).totalStaked).to.be.equal(19);
         console.log("7th block timestamp:", (await time.latest() - poolStartTime));
 
@@ -165,18 +165,18 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         await time.increaseTo(await time.latest() + 199);
         await erc721PenaltyPool.connect(user_A).stake([6, 7, 8]);
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("137.096382679105791235"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("271.456768803279100763"));
-        expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("148.457837528604118994"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("205.649067275211439972"));
+        expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("112.468058733790999238"));
         expect((await erc721PenaltyPool.pool()).totalStaked).to.be.equal(22);
         console.log("8th block timestamp:", (await time.latest() - poolStartTime));
 
         // Time = 701 seconds after pool was started
         await erc721PenaltyPool.connect(user_C).claim();
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("137.501382679105791235"));
-        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("271.771768803279100762"));
+        expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("205.887703638847803608"));
 
-        expect(await mockRewardToken.balanceOf(user_C.getAddress())).to.be.equal(ethers.parseEther("148.727837528604118994"));
-        expect(((await erc721PenaltyPool.userInfo(user_C.getAddress())).claimed)).to.be.equal(ethers.parseEther("148.727837528604118994"));
+        expect(await mockRewardToken.balanceOf(user_C.getAddress())).to.be.equal(ethers.parseEther("112.672604188336453783"));
+        expect(((await erc721PenaltyPool.userInfo(user_C.getAddress())).claimed)).to.be.equal(ethers.parseEther("112.672604188336453783"));
         console.log("9th block timestamp:", (await time.latest() - poolStartTime));
 
         // Time = 800 seconds after pool was started
@@ -184,8 +184,8 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         await erc721PenaltyPool.connect(user_B).claim();
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("177.596382679105791235"));
         expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("26.73"));
-        expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("302.956768803279100762"));
-        expect(((await erc721PenaltyPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("302.956768803279100762"));
+        expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("229.512703638847803608"));
+        expect(((await erc721PenaltyPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("229.512703638847803608"));
         console.log("10th block timestamp:", (await time.latest() - poolStartTime));
 
         // Time = 990 seconds after pool was started
@@ -217,8 +217,8 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         // Time = 1001 seconds after pool was started
         await time.increaseTo(await time.latest() + 1);
         await erc721PenaltyPool.connect(user_B).claim();
-        expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("362.806768803279100763"));
-        expect(((await erc721PenaltyPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("362.806768803279100763"));
+        expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("289.362703638847803609"));
+        expect(((await erc721PenaltyPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("289.362703638847803609"));
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
         expect(await erc721PenaltyPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("83.178000000000000001"));
         console.log("14th block timestamp:", (await time.latest() - poolStartTime));
@@ -226,8 +226,8 @@ describe("ERC721PenaltyPool Standard Scenario", async function () {
         // Time = 1100 seconds after pool was started
         await time.increaseTo(await time.latest() + 98);
         await erc721PenaltyPool.connect(user_C).claim();
-        expect(await mockRewardToken.balanceOf(user_C.getAddress())).to.be.equal(ethers.parseEther("231.905837528604118995"));
-        expect(((await erc721PenaltyPool.userInfo(user_C.getAddress())).claimed)).to.be.equal(ethers.parseEther("231.905837528604118995"));
+        expect(await mockRewardToken.balanceOf(user_C.getAddress())).to.be.equal(ethers.parseEther("195.850604188336453784"));
+        expect(((await erc721PenaltyPool.userInfo(user_C.getAddress())).claimed)).to.be.equal(ethers.parseEther("195.850604188336453784"));
         expect(await erc721PenaltyPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
         expect(await erc721PenaltyPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("0"));
         expect((await erc721PenaltyPool.pool()).totalStaked).to.be.equal(6);
