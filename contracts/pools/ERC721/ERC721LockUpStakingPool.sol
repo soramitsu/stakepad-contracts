@@ -36,6 +36,14 @@ contract ERC721LockUpPool is
 
     LockUpPool public pool;
 
+    /// @notice Constructor to initialize the staking pool with specified parameters
+    /// @param stakeToken Address of the ERC20 token to be staked
+    /// @param rewardToken Address of the ERC20 token used for rewards
+    /// @param poolStartTime Start time of the staking pool
+    /// @param poolEndTime End time of the staking pool
+    /// @param rewardTokenPerSecond Rate of rewards per second
+    /// @param unstakeLockUpTime LockUp time in unixtimestamp for unstaking
+    /// @param claimLockUpTime LockUp time in unixtimestamp for claiming rewards
     constructor(
         address stakeToken,
         address rewardToken,
@@ -54,7 +62,10 @@ contract ERC721LockUpPool is
         // Ensure the LockUp periods are valid
         if (unstakeLockUpTime > poolEndTime || claimLockUpTime > poolEndTime)
             revert InvalidLockUpTime();
-
+        // Ensure the reward rate is not zero
+        if (rewardTokenPerSecond == 0) revert InvalidRewardRate();
+            
+        // Initialize pool parameters
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
@@ -185,13 +196,15 @@ contract ERC721LockUpPool is
                 PRECISION_FACTOR;
         }
         if (pending > 0) {
-            // Transfer pending rewards to the user
             user.pending = 0;
             unchecked {
                 user.claimed += pending;
             }
+            // Update total claimed amount
             pool.totalClaimed += pending;
+            // Transfer pending rewards from the contract to the user
             IERC20(pool.rewardToken).safeTransfer(msg.sender, pending);
+            // Emit claim event
             emit Claim(msg.sender, pending, 0);
         } else {
             revert NothingToClaim();

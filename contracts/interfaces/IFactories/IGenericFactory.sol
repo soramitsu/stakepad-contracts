@@ -12,6 +12,10 @@ interface IGenericFactory {
     /// @notice Error to indicate when an invalid payload was submitted.
     error InvalidPayloadLength();
 
+    /// @notice Function used to deploy staking pool with specified parameters
+    /// @dev MUST be called by RequestManager contract
+    /// @param deployer Address of the deployer
+    /// @param payload Encoded staking pool deployment parameters
     function deploy(address deployer, bytes calldata payload) external returns (address);
 
     event StakingPoolDeployed(address indexed stakingAddress);

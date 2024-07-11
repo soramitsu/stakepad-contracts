@@ -30,7 +30,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
       await ethers.getSigners();
 
     let RequestManagerFactory = await ethers.getContractFactory(
-        "RequestManager"
+      "RequestManager"
     );
     let ERC20LockUpStakingFactory = await ethers.getContractFactory(
       "ERC20LockUpStakingFactory"
@@ -73,7 +73,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
       claimLockUpTime: 300
     };
 
-    let encoded = coder.encode(["tuple(address stakeToken, address rewardToken, uint poolStartTime, uint poolEndTime, uint rewardPerSecond, uint unstakeLockUpTime, uint claimLockUpTime)"],[data]);
+    let encoded = coder.encode(["tuple(address stakeToken, address rewardToken, uint poolStartTime, uint poolEndTime, uint rewardPerSecond, uint unstakeLockUpTime, uint claimLockUpTime)"], [data]);
     let requestPayload = {
       ipfsHash: ipfsHash,
       deployer: deployer.address,
@@ -98,7 +98,7 @@ describe("ERC20LockupPool Standard Scenario", async function () {
 
   });
 
-  it("Handles ERC20LockupPool reward calculation scenario", async function () {
+  it("ERC20LockupPool reward calculation scenario, Initial Staking (Time = 10 seconds after pool was started)", async function () {
 
     let poolInfo = await erc20LockUpPool.pool();
     // --- Initial Staking (Time = 10 seconds after pool was started)
@@ -106,8 +106,9 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     await erc20LockUpPool.connect(user_A).stake(ethers.parseEther("500"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("500"));
     console.log("1st block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 50 seconds after pool was started
+  it("Time = 50 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 39);
     await erc20LockUpPool.connect(user_B).stake(ethers.parseEther("210"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("40"));
@@ -115,42 +116,48 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("710"));
     console.log("2nd block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 200 seconds after pool was started
+  it("Time = 200 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 149);
     await erc20LockUpPool.connect(user_B).stake(ethers.parseEther("230"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("145.633802816901408450"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("44.366197183098591549"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("940"));
     console.log("3rd block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 250 seconds after pool was started
+  it("Time = 250 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 50);
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("172.229547497752472250"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("67.770452502247527693"));
     console.log("4th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 300 seconds after pool was started
+  it("Time = 300 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 50);
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("198.825292178603536100"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("91.174707821396463881"));
     console.log("5th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 301 seconds after pool was started
+  it("Time = 301 seconds after pool was started", async function () {
     await erc20LockUpPool.connect(user_A).claim();
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("91.642792927779442581"));
     expect(await mockRewardToken.balanceOf(user_A.getAddress())).to.be.equal(ethers.parseEther("199.357207072220557350"));
     expect(((await erc20LockUpPool.userInfo(user_A.getAddress())).claimed)).to.be.equal(ethers.parseEther("199.357207072220557350"));
     console.log("6th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 500 seconds after pool was started
+  it("Time = 500 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 199);
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("105.851063829787234000"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("184.791729097992208501"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("940"));
     console.log("7th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 700 seconds after pool was started
+  it("Time = 700 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 199);
     await erc20LockUpPool.connect(user_B).unstake(ethers.parseEther("20"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("212.234042553191489350"));
@@ -158,16 +165,18 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("920"));
     console.log("8th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 701 seconds after pool was started
+  it("Time = 701 seconds after pool was started", async function () {
     await erc20LockUpPool.connect(user_C).stake(ethers.parseEther("460"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("212.777520814061054550"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("278.865272113718387977"));
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("1380"));
     console.log("9th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 800 seconds after pool was started
+  it("Time = 800 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 98);
     await erc20LockUpPool.connect(user_B).claim();
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("248.647086031452358850"));
@@ -175,8 +184,9 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("308.995706896327083589"));
     expect(((await erc20LockUpPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("308.995706896327083589"));
     console.log("10th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 990 seconds after pool was started
+  it("Time = 990 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 189);
     await erc20LockUpPool.connect(user_A).unstake(ethers.parseEther("500"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("317.487665741597286350"));
@@ -184,8 +194,9 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("96.333333333333333256"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("880"));
     console.log("11th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 998 seconds after pool was started
+  it("Time = 998 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 7);
     await erc20LockUpPool.connect(user_A).claim();
     expect(await mockRewardToken.balanceOf(user_A.getAddress())).to.be.equal(ethers.parseEther("516.844872813817843700"));
@@ -193,33 +204,37 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("61.644268774703557278"));
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("100.515151515151515070"));
     console.log("12th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 999 seconds after pool was started
+  it("Time = 999 seconds after pool was started", async function () {
     await erc20LockUpPool.connect(user_B).unstake(ethers.parseEther("420"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("62.121541501976284524"));
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("101.037878787878787768"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("460"));
     console.log("13th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 1001 seconds after pool was started
+  it("Time = 1001 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 1);
     await network.provider.send("evm_setAutomine", [false]);
     await erc20LockUpPool.connect(user_C).unstake(ethers.parseEther("460"));
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("62.121541501976284524"));
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("102.037878787878787736"));
-    expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("460"));
 
     await erc20LockUpPool.connect(user_B).claim();
+    await network.provider.send("evm_setAutomine", [true]);
+    await network.provider.send("evm_mine", []);
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("102.037878787878787736"));
-    expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("308.995706896327083589"));
-    expect(((await erc20LockUpPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("308.995706896327083589"));
-    await network.provider.send("evm_setAutomine", [true]);
+    expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("371.117248398303368113"));
+    expect(((await erc20LockUpPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("371.117248398303368113"));
+    expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("0"));
     console.log("14th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 1100 seconds after pool was started
+  it("Time = 1100 seconds after pool was started", async function () {
     await time.increaseTo(await time.latest() + 98);
     await erc20LockUpPool.connect(user_C).claim();
     expect(await mockRewardToken.balanceOf(user_C.getAddress())).to.be.equal(ethers.parseEther("102.037878787878787736"));
@@ -228,14 +243,15 @@ describe("ERC20LockupPool Standard Scenario", async function () {
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(ethers.parseEther("0"));
     console.log("15th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-    // Time = 1105 seconds after pool was started
-    await time.increaseTo(await time.latest() + 5);
+  it("Time = 1105 seconds after pool was started", async function () {
+    await time.increaseTo(await time.latest() + 4);
     expect(await erc20LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect(await erc20LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect(await erc20LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("0"));
     expect((await erc20LockUpPool.pool()).totalStaked).to.be.equal(0);
     console.log("16th block timestamp:", (await time.latest() - poolStartTime));
+  })
 
-  });
 });

@@ -17,9 +17,10 @@ contract ERC20LockUpStakingFactory is GenericFactory, ILockUpFactory {
 
     constructor(address managerContract) GenericFactory(managerContract) {}
 
-    /// @notice Function allows users to deploy the LockUp staking pool with specified parameters
+    /// @notice Function used to deploy the LockUp staking pool with specified parameters
+    /// @dev See {IGenericFactory-deploy}.
     /// @param deployer Address of the deployer
-    /// @param payload Encoded staking pool deployment parameters 
+    /// @param payload Encoded LockUp staking pool deployment parameters 
     function deploy(
         address deployer,
         bytes calldata payload

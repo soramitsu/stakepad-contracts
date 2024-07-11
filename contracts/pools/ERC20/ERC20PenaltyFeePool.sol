@@ -55,7 +55,10 @@ contract ERC20PenaltyFeePool is
         if (poolStartTime >= poolEndTime) revert InvalidStakingPeriod();
         if (poolStartTime + penaltyPeriod > poolEndTime)
             revert InvalidPenaltyPeriod();
+        // Ensure the reward rate is not zero
         if (rewardTokenPerSecond == 0) revert InvalidRewardRate();
+
+        // Initialize pool parameters
         pool.stakeToken = stakeToken;
         pool.rewardToken = rewardToken;
         pool.startTime = poolStartTime;
