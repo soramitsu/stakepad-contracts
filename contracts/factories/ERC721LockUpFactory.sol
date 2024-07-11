@@ -12,15 +12,14 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 /// @title ERC721LockUpStakingFactory
 /// @notice A smart contract for deploying ERC721 LockUp staking pools.
-/// @author Ayooluwa Akindeko, Soramitsu team
 contract ERC721LockUpStakingFactory is GenericFactory, ILockUpFactory {
     using SafeERC20 for IERC20;
 
     constructor(address managerContract) GenericFactory(managerContract) {}
 
-    /// @notice Function allows users to deploy the ERC721 LockUp staking pool with specified parameters
+    /// @notice Function used to deploy the ERC721 LockUp staking pool with specified parameters
     /// @param deployer Address of the deployer
-    /// @param payload Encoded staking pool deployment parameters 
+    /// @param payload Encoded LockUp staking pool deployment parameters 
     function deploy(
         address deployer,
         bytes calldata payload

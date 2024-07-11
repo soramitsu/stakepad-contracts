@@ -17,9 +17,9 @@ contract ERC721PenaltyFeeStakingFactory is GenericFactory, IPenaltyFeeFactory {
 
     constructor(address managerContract) GenericFactory(managerContract) {}
 
-    /// @notice Function allows users to deploy the ERC721 penaltyFee staking pool with specified parameters
+    /// @notice Function used to deploy the ERC721 penaltyFee staking pool with specified parameters
     /// @param deployer Address of the deployer
-    /// @param payload Encoded staking pool deployment parameters 
+    /// @param payload Encoded PenaltyFee staking pool deployment parameters 
      function deploy(address deployer, bytes calldata payload) public returns (address newPoolAddress) {
         if (msg.sender != requestManager) revert InvalidCaller();
         if (payload.length != 192) revert InvalidPayloadLength();

@@ -35,8 +35,9 @@ contract RequestManager is Ownable, IRequestManager {
         emit FactoryUnregistered(factory);
     }
 
-    /// @notice Deploys the staking pool with parameters from an approved request.
-    /// @param id ID of the request to be deployed.
+    /**
+     * @dev See {IRequestManager-deploy}
+     */
     function deploy(uint256 id) external {
         if (requests.length <= id) revert InvalidId();
         Request memory req = requests[id];
@@ -52,8 +53,9 @@ contract RequestManager is Ownable, IRequestManager {
         emit RequestFullfilled(id, newPoolAddress);
     }
 
-    /// @notice Requests deployment of a new staking pool.
-    /// @param data Request data for the staking pool.
+    /**
+     * @dev See {IRequestManager-requestDeployment}
+     */
     function requestDeployment(RequestPayload calldata data) external {
         if (data.deployer == address(0) || data.factory == address(0))
             revert InvalidAddress();
@@ -64,8 +66,9 @@ contract RequestManager is Ownable, IRequestManager {
         emit RequestSubmitted(requests.length - 1, data);
     }
 
-    /// @notice Approves a deployment request.
-    /// @param id ID of the request to be approved.
+    /**
+     * @dev See {IRequestManager-approveRequest}
+     */
     function approveRequest(uint256 id) external onlyOwner {
         if (requests.length <= id) revert InvalidId();
         Request storage req = requests[id];
@@ -74,8 +77,9 @@ contract RequestManager is Ownable, IRequestManager {
         emit RequestStatusChanged(id, req.requestStatus);
     }
 
-    /// @notice Denies a deployment request.
-    /// @param id ID of the request to be denied.
+    /**
+     * @dev See {IRequestManager-denyRequest}
+     */
     function denyRequest(uint256 id) external onlyOwner {
         if (requests.length <= id) revert InvalidId();
         Request storage req = requests[id];
@@ -84,8 +88,9 @@ contract RequestManager is Ownable, IRequestManager {
         emit RequestStatusChanged(id, req.requestStatus);
     }
 
-    /// @notice Cancels a deployment request.
-    /// @param id ID of the request to be canceled.
+    /**
+     * @dev See {IRequestManager-cancelRequest}
+     */
     function cancelRequest(uint256 id) external {
         if (requests.length <= id) revert InvalidId();
         Request storage req = requests[id];

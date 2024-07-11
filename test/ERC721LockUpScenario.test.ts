@@ -217,11 +217,13 @@ describe("erc721LockUpPool Standard Scenario", async function () {
         expect(await erc721LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("58.891774891774891775"));
 
         await erc721LockUpPool.connect(user_B).claim();
+        await network.provider.send("evm_setAutomine", [true]);
+        await network.provider.send("evm_mine", []);
         expect(await erc721LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
         expect(await erc721LockUpPool.pendingRewards(user_C.getAddress())).to.be.equal(ethers.parseEther("58.891774891774891775"));
-        expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("333.411764705882352941"));
-        expect(((await erc721LockUpPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("333.411764705882352941"));
-        await network.provider.send("evm_setAutomine", [true]);
+        expect(await mockRewardToken.balanceOf(user_B.getAddress())).to.be.equal(ethers.parseEther("402.900942195059842118"));
+        expect(((await erc721LockUpPool.userInfo(user_B.getAddress())).claimed)).to.be.equal(ethers.parseEther("402.900942195059842118"));
+        expect((await erc721LockUpPool.pool()).totalStaked).to.be.equal(3);
         console.log("14th block timestamp:", (await time.latest() - poolStartTime));
 
         // Time = 1100 seconds after pool was started
@@ -235,7 +237,7 @@ describe("erc721LockUpPool Standard Scenario", async function () {
         console.log("15th block timestamp:", (await time.latest() - poolStartTime));
 
         // Time = 1105 seconds after pool was started
-        await time.increaseTo(await time.latest() + 5);
+        await time.increaseTo(await time.latest() + 4);
         await erc721LockUpPool.connect(user_B).unstake([10, 11, 12]);
         expect(await erc721LockUpPool.pendingRewards(user_A.getAddress())).to.be.equal(ethers.parseEther("0"));
         expect(await erc721LockUpPool.pendingRewards(user_B.getAddress())).to.be.equal(ethers.parseEther("0"));
