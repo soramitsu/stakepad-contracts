@@ -6,7 +6,7 @@ import {
     ERC20MockToken,
     ERC20PenaltyFeeStakingFactory,
     RequestManager
-} from "../typechain";
+} from "../../typechain";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("ERC20PenaltyPool Standard Scenario", async function () {
