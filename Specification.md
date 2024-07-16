@@ -105,6 +105,21 @@ This document covers the following:
   - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC20 penalty fee staking pool with specified parameters.
 - **Derived Interfaces**: `IPenaltyFeeFactory`, `IGenericFactory`
 
+**ERC721LockUpStakingFactory**
+- **Description**: Factory contract for creating ERC721 lock-up staking pools.
+- **Constructor**: Initializes the contract with the manager contract address.
+- **Functions**:
+  - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC721 lock-up staking pool with specified parameters.
+- **Derived Interfaces**: `ILockUpFactory`, `IGenericFactory`
+
+**ERC721PenaltyFeeStakingFactory**
+- **Description**: Factory contract for creating ERC721 staking pools with penalty fees.
+- **Constructor**: Initializes the contract with the manager contract address.
+- **Functions**:
+  - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC721 penalty fee staking pool with specified parameters.
+- **Derived Interfaces**: `IPenaltyFeeFactory`, `IGenericFactory`
+
+
 ## 3.3 Main Contracts
 
 **ERC20LockUpPool**
