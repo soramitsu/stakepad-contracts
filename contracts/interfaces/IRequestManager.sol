@@ -52,7 +52,7 @@ interface IRequestManager {
     /// @notice Thrown when the token address is invalid.
     error InvalidAddress();
 
-    /// @notice Thrown when the {stakingData} payload param is emty.
+    /// @notice Thrown when the {stakingData} payload param is empty.
     error EmptyPayload();
     error UnregisteredFactory();
     error AlreadyRegisteredFactory();
