@@ -27,16 +27,32 @@ interface IRequestManager {
         bytes stakingData;
     }
 
+    /**
+    * @notice Information about a staking pool request.
+    * @param requestStatus Current status of the request.
+    * @param data See {RequestPayload} above.
+    */
     struct Request {
         Status requestStatus;
         RequestPayload data;
     }
 
+    /// @notice Thrown when an invalid ID is used.
     error InvalidId();
+
+    /// @notice Thrown when the request status is invalid.
     error InvalidRequestStatus();
+
+    /// @notice Thrown when the caller is not authorized.
     error InvalidDeployer();
+
+    /// @notice Thrown when the IPFS hash is zero.
     error IpfsZeroHash();
+
+    /// @notice Thrown when the token address is invalid.
     error InvalidAddress();
+
+    /// @notice Thrown when the {stakingData} payload param is emty.
     error EmptyPayload();
     error UnregisteredFactory();
     error AlreadyRegisteredFactory();

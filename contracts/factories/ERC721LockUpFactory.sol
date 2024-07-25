@@ -1,5 +1,5 @@
 /*
-ERC20LockUpFactory
+ERC721LockUpFactory
 SPDX-License-Identifier: MIT
 */
 
@@ -52,7 +52,7 @@ contract ERC721LockUpStakingFactory is GenericFactory, ILockUpFactory {
         uint256 rewardAmount = (data.poolEndTime - data.poolStartTime) *
             data.rewardPerSecond;
         ERC721LockUpPool(newPoolAddress).transferOwnership(deployer);
-        // Transfer reward tokens from the owner to the contract
+        // Transfer reward tokens from the owner to the deployed pool contract
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(data.rewardToken).safeTransferFrom(
             deployer,

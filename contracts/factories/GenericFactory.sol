@@ -16,7 +16,7 @@ abstract contract GenericFactory is Ownable, IGenericFactory {
         requestManager = managerContract;
     }
 
-    /// @notice Function allows admins to replace RequestManager contract's address in case of repdeployment
+    /// @notice Function allows admins to replace RequestManager contract's address in case of redeployment
     /// @param newManagerContract Address of the new RequestManager contract
     function updateManagerContract(
         address newManagerContract
