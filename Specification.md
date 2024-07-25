@@ -56,7 +56,7 @@ This document covers the following:
 - **Constructor**: Initializes the contract with the manager contract address.
 - **Functions**:
   - `deploy(address deployer, bytes calldata payload, bool isERC20, bool isLockUp)`: Deploys a new staking pool with specified parameters.
-- **Derived Interfaces**: `ILockUpFactory`, `IPenaltyFeeFactory`, `IGenericFactory`
+- **Derived Interfaces**: `ILockUpFactory`, `IPenaltyFeeFactory`
 
 ## Main Contracts
 
