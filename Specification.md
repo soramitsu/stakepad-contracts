@@ -34,7 +34,6 @@ This document covers the following:
 - **Staking Pool**: A smart contract where users can stake tokens to earn rewards.
 - **ERC20**: A standard for fungible tokens on the Ethereum blockchain.
 - **ERC721**: A standard for non-fungible tokens (NFTs) on the Ethereum blockchain.
-- 
 # Smart Contracts
 
 **RequestManager**
@@ -50,107 +49,104 @@ This document covers the following:
   - `removeFactory(address factory)`: Removes a factory from the whitelist.
 - **Derived Interfaces**: `IRequestManager`
 
+## Factory Contracts
 
-**ERC20LockUpStakingFactory**
-- **Description**: Factory contract for creating ERC20 lock-up staking pools.
+**StakingFactory**
+- **Description**: Factory contract for creating ERC20 and ERC721 staking pools with either lock-up or penalty fee mechanisms.
 - **Constructor**: Initializes the contract with the manager contract address.
 - **Functions**:
-  - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC20 lock-up staking pool with specified parameters.
-- **Derived Interfaces**: `ILockUpFactory`, `IGenericFactory`
+  - `deploy(address deployer, bytes calldata payload, bool isERC20, bool isLockUp)`: Deploys a new staking pool with specified parameters.
+- **Derived Interfaces**: `ILockUpFactory`, `IPenaltyFeeFactory`, `IGenericFactory`
 
-**ERC20PenaltyFeeStakingFactory**
-- **Description**: Factory contract for creating ERC20 staking pools with penalty fees.
-- **Constructor**: Initializes the contract with the manager contract address.
-- **Functions**:
-  - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC20 penalty fee staking pool with specified parameters.
-- **Derived Interfaces**: `IPenaltyFeeFactory`, `IGenericFactory`
+## Main Contracts
 
-**ERC721LockUpStakingFactory**
-- **Description**: Factory contract for creating ERC721 lock-up staking pools.
-- **Constructor**: Initializes the contract with the manager contract address.
-- **Functions**:
-  - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC721 lock-up staking pool with specified parameters.
-- **Derived Interfaces**: `ILockUpFactory`, `IGenericFactory`
-
-**ERC721PenaltyFeeStakingFactory**
-- **Description**: Factory contract for creating ERC721 staking pools with penalty fees.
-- **Constructor**: Initializes the contract with the manager contract address.
-- **Functions**:
-  - `deploy(address deployer, bytes calldata payload)`: Deploys a new ERC721 penalty fee staking pool with specified parameters.
-- **Derived Interfaces**: `IPenaltyFeeFactory`, `IGenericFactory`
-
-
-**ERC20LockUpPool**
-- **Description**: A staking pool contract for ERC20 tokens with lock-up periods. Manages staking, unstaking, and reward distribution.
+**LockUpPool**
+- **Description**: A staking pool contract for tokens (both ERC20 and ERC721) with lock-up periods. Manages staking, unstaking, and reward distribution.
 - **Constructor**: Initializes the pool with specified parameters including staking token, reward token, start and end times, reward rate, and lock-up periods.
 - **Functions**:
-  - `stake(uint256 amount)`: Allows users to stake tokens.
-  - `unstake(uint256 amount)`: Allows users to unstake tokens after the lock-up period.
-  - `claim()`: Allows users to claim their pending rewards.
-  - `pendingRewards(address userAddress)`: Returns the pending rewards for a user.
-  - `_updatePool()`: Internal function to update the pool's state.
-  - `_getMultiplier(uint256 _from, uint256 _to)`: Internal function to calculate the reward multiplier.
-- **Derived Interfaces**: `IPoolERC20`, `ILockUpPoolStorage`, `IPoolErrors`
+  - [`stake`](#stake): Allows users to stake tokens.
+  - [`unstake`](#unstake): Allows users to unstake tokens after the lock-up period.
+  - [`claim`](#claim): Allows users to claim their pending rewards.
+  - [`pendingRewards`](#pendingrewardsaddress-useraddress): Returns the pending rewards for a user.
+  - [`_updatePool`](#_updatepool): Internal function to update the pool's state.
+  - [`_getMultiplier`](#_getmultiplieruint256-_from-uint256-_to): Internal function to calculate the reward multiplier.
+- **Derived Interfaces**: `IPoolERC20`, `IPoolERC721`, `ILockUpPoolStorage`, `IPoolErrors`
 
-**ERC20PenaltyFeePool**
-- **Description**: A staking pool contract for ERC20 tokens with penalty fees. Manages staking, unstaking with penalties, and reward distribution.
+**PenaltyFeePool**
+- **Description**: A staking pool contract for tokens (both ERC20 and ERC721) with penalty fees. Manages staking, unstaking with penalties, and reward distribution.
 - **Constructor**: Initializes the pool with specified parameters including staking token, reward token, start and end times, reward rate, and penalty period.
 - **Functions**:
-  - `stake(uint256 amount)`: Allows users to stake tokens.
-  - `unstake(uint256 amount)`: Allows users to unstake tokens, applying a penalty if within the penalty period.
-  - `claim()`: Allows users to claim their pending rewards.
-  - `claimFee()`: Allows the admin to claim accumulated penalty fees.
-  - `pendingRewards(address userAddress)`: Returns the pending rewards for a user.
-  - `_updatePool()`: Internal function to update the pool's state.
-  - `_calculatePenalizedAmount(bool penalized, uint256 _amountToPenalize)`: Internal function to calculate the penalty amount.
-  - `_getMultiplier(uint256 _from, uint256 _to)`: Internal function to calculate the reward multiplier.
-- **Derived Interfaces**: `IPoolERC20`, `IPenaltyFeePoolStorage`, `IPoolErrors`
-
-**ERC721LockUpPool**
-- **Description**: A staking pool contract for ERC721 tokens with lock-up periods. Manages staking, unstaking, and reward distribution.
-- **Constructor**: Initializes the pool with specified parameters including staking token, reward token, start and end times, reward rate, and lock-up periods.
-- **Functions**:
-  - `stake(uint256[] calldata tokenIds)`: Allows users to stake tokens.
-  - `unstake(uint256[] calldata tokenIds)`: Allows users to unstake tokens after the lock-up period.
-  - `claim()`: Allows users to claim their pending rewards.
-  - `pendingRewards(address userAddress)`: Returns the pending rewards for a user.
-  - `_updatePool()`: Internal function to update the pool's state.
-  - `_getMultiplier(uint256 _from, uint256 _to)`: Internal function to calculate the reward multiplier.
-- **Derived Interfaces**: `IPoolERC721`, `ILockUpPoolStorage`, `IPoolErrors`
-
-**ERC721PenaltyFeePool**
-- **Description**: A staking pool contract for ERC721 tokens with penalty fees. Manages staking, unstaking with penalties, and reward distribution.
-- **Constructor**: Initializes the pool with specified parameters including staking token, reward token, start and end times, reward rate, and penalty period.
-- **Functions**:
-  - `stake(uint256[] calldata tokenIds)`: Allows users to stake tokens.
-  - `unstake(uint256[] calldata tokenIds)`: Allows users to unstake tokens, applying a penalty if within the penalty period.
-  - `claim()`: Allows users to claim their pending rewards.
-  - `claimFee()`: Allows the admin to claim accumulated penalty fees.
-  - `pendingRewards(address userAddress)`: Returns the pending rewards for a user.
-  - `_updatePool()`: Internal function to update the pool's state.
-  - `_calculatePenalizedAmount(bool penalized, uint256 _amountToPenalize)`: Internal function to calculate the penalty amount.
-  - `_getMultiplier(uint256 _from, uint256 _to)`: Internal function to calculate the reward multiplier.
-- **Derived Interfaces**: `IPoolERC721`, `IPenaltyFeePoolStorage`, `IPoolErrors`
+  - [`stake`](#stake) (ERC20) / [`stake`](#stake) (ERC721): Allows users to stake tokens.
+  - [`unstake`](#unstake) (ERC20) / [`unstake`](#unstake) (ERC721): Allows users to unstake tokens, applying a penalty if within the penalty period.
+  - [`claim`](#claim): Allows users to claim their pending rewards.
+  - [`claimFee`](#claimfee): Allows the admin to claim accumulated penalty fees.
+  - [`pendingRewards`](#pendingrewardsaddress-useraddress): Returns the pending rewards for a user.
+  - [`_updatePool`](#_updatepool): Internal function to update the pool's state.
+  - [`_calculatePenalizedAmount`](#_calculatepenalizedamountbool-penalized-uint256-_amounttopenalize): Internal function to calculate the penalty amount.
+  - [`_getMultiplier`](#_getmultiplieruint256-_from-uint256-_to): Internal function to calculate the reward multiplier.
+- **Derived Interfaces**: `IPoolERC20`, `IPoolERC721`, `IPenaltyFeePoolStorage`, `IPoolErrors`
 
 ## Function Logic
 
-### _updatePool()
+### stake
+- **Description**: Allows users to stake tokens in the pool.
+- **Parameters**: 
+  - `amount` (ERC20) - The number of tokens to stake.
+  - `tokenIds` (ERC721) - The IDs of the tokens to stake.
+- **Calling Functions**: 
+  - External function, called directly by users.
+- **Logic**:
+  1. **Update Pool State**: Calls [`_updatePool`](#_updatepool) to update the state of the pool.
+  2. **Transfer Tokens**: Transfers the staking tokens from the user to the pool contract.
+  3. **Update User Info**: Updates the user's staking balance and reward debt.
+
+### unstake
+- **Description**: Allows users to unstake tokens from the pool.
+- **Parameters**: 
+  - `amount` (ERC20) - The number of tokens to unstake.
+  - `tokenIds` (ERC721) - The IDs of the tokens to unstake.
+- **Calling Functions**: 
+  - External function, called directly by users.
+- **Logic**:
+  1. **Check Lock-Up Period**: Ensures that the lock-up period has ended.
+  2. **Update Pool State**: Calls [`_updatePool`](#_updatepool) to update the state of the pool.
+  3. **Transfer Tokens**: Transfers the staking tokens from the pool contract back to the user.
+  4. **Update User Info**: Updates the user's staking balance and reward debt.
+
+### claim
+- **Description**: Allows users to claim their pending rewards.
+- **Parameters**: None
+- **Calling Functions**: 
+  - External function, called directly by users.
+- **Logic**:
+  1. **Update Pool State**: Calls [`_updatePool`](#_updatepool) to update the state of the pool.
+  2. **Calculate Rewards**: Calculates the user's pending rewards.
+  3. **Transfer Rewards**: Transfers the reward tokens to the user.
+  4. **Update User Info**: Updates the user's claimed rewards and reward debt.
+
+### claimFee
+- **Description**: Allows the admin to claim accumulated penalty fees.
+- **Parameters**: None
+- **Calling Functions**: 
+  - External function, called directly by the admin.
+- **Logic**:
+  1. **Check Admin**: Ensures that the caller is the admin.
+  2. **Transfer Fees**: Transfers the accumulated penalty fees to the admin.
+
+### _updatePool
 - **Description**: Updates the state of the pool by recalculating the accumulated rewards per share and the last update timestamp.
 - **Parameters**: None
 - **Calling Functions**: 
-  - `stake(uint256 amount)`
-  - `unstake(uint256 amount)`
-  - `claim()`
+  - [`stake`](#stake)
+  - [`unstake`](#unstake)
+  - [`claim`](#claim)
 - **Logic**:
-  1. **Elapsed Period Calculation**:
-     - Calculates the elapsed period as `Elapsed Period = Current Timestamp - Last Update Timestamp`.
-  2. **Accrued Rewards Calculation**:
-     - Computes the total new rewards accrued over the elapsed period:  
+  1. **Elapsed Period Calculation**: Calculates the elapsed period as `Elapsed Period = Current Timestamp - Last Update Timestamp`.
+  2. **Accrued Rewards Calculation**: Computes the total new rewards accrued over the elapsed period:  
        `Total New Reward = Reward Rate per Second * Elapsed Period`.
      - Updates the accumulated rewards per share:  
        `Acc. Reward Per Share += (Total New Reward * Precision Factor) / Total Staked Tokens`.
-  3. **Update Timestamp**:
-     - Sets the last update timestamp to the current timestamp.
+  3. **Update Timestamp**: Sets the last update timestamp to the current timestamp.
 
 ### pendingRewards(address userAddress)
 - **Description**: Returns the pending rewards for a specific user.
@@ -158,14 +154,12 @@ This document covers the following:
 - **Calling Functions**: 
   - External view function, called directly by users or other contracts.
 - **Logic**:
-  1. **User and Share Calculation**:
-     - Retrieves user info and calculates the updated accumulated reward per share.
+  1. **User and Share Calculation**: Retrieves user info and calculates the updated accumulated reward per share.
      - If the current timestamp is greater than the last update timestamp and there are staked tokens:
        - `Elapsed Period = Current Timestamp - Last Update Timestamp`.
        - `Total New Reward = Reward Rate per Second * Elapsed Period`.
        - `Updated Acc. Reward Per Share = Acc. Reward Per Share + (Total New Reward * Precision Factor) / Total Staked Tokens`.
-  2. **Pending Rewards Calculation**:
-     - Computes the pending rewards:  
+  2. **Pending Rewards Calculation**: Computes the pending rewards:  
        `Pending Rewards = User Pending Rewards + ((User Amount * Updated Acc. Reward Per Share) / Precision Factor) - User Reward Debt`.
 
 ### _getMultiplier(uint256 _from, uint256 _to)
@@ -174,8 +168,8 @@ This document covers the following:
   - `_from` - start timestamp.
   - `_to` - end timestamp.
 - **Calling Functions**: 
-  - [`_updatePool()`](#_updatepool)
-  - [`pendingRewards(address userAddress)`](#pendingrewardsaddress-useraddress)
+  - [`_updatePool`](#_updatepool)
+  - [`pendingRewards`](#pendingrewardsaddress-useraddress)
 - **Logic**:
   - If `_to` is within the staking period:  
     `Multiplier = _to - _from`.
@@ -187,17 +181,16 @@ This document covers the following:
 ### _calculatePenalizedAmount(bool penalized, uint256 _amountToPenalize)
 - **Description**: Calculates the penalty amount for early unstaking.
 - **Parameters**: 
-  - `penalized` - boolean indicating if the user is penalized, determined by conditions in `unstake(uint256 amount)` and `claim()`.
-  - `_amountToPenalize` - the amount to penalize, passed by `unstake(uint256 amount)` and `claim()`.
+  - `penalized` - boolean indicating if the user is penalized, determined by conditions in [`unstake`](#unstake) and [`claim`](#claim).
+  - `_amountToPenalize` - the amount to penalize, passed by [`unstake`](#unstake) and [`claim`](#claim).
 - **Calling Functions**: 
-  - `unstake(uint256 amount)`
-  - `claim()`
+  - [`unstake`](#unstake)
+  - [`claim`](#claim)
 - **Logic**:
   - If the user is penalized:  
     `Penalty Amount = (_amountToPenalize * Penalty Fee) / 10000`.
   - Otherwise:  
     `Penalty Amount = (_amountToPenalize * Collectable Fee) / 10000`.
-
 
 
 # Security Concerns
